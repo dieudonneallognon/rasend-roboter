@@ -1,0 +1,9 @@
+
+public enum CaseType {
+	CROISSANT,
+	SATURNE,
+	CROIX,
+	ENGRENAGE,
+	VIDE,
+	TROU_NOIR;
+}
