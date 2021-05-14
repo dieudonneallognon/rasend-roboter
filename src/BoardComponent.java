@@ -59,7 +59,13 @@ public class BoardComponent extends JPanel {
 		Set<Board.Coord> randomCoords = new HashSet<Board.Coord>();
 
 		while (randomCoords.size() < 4) {
-			randomCoords.add(new Board.Coord(randRow.nextInt(16), randCol.nextInt(16)));
+			
+			int row = randRow.nextInt(16);
+			int col = randCol.nextInt(16);
+			
+			if ( (row != 7 && row != 8) || (col != 7 && col != 8)) {
+				randomCoords.add(new Board.Coord(row, col));
+			}
 		}
 
 		pionList = new PionComponent[4];
@@ -75,7 +81,7 @@ public class BoardComponent extends JPanel {
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				if (model.isReady()) {
+				if (model.isReady() && currentFocused != null) {
 					firePropertyChange(PROP_HAVE_MATCH, null, Board.getCaseAt(currentFocused.getModel().getCoord()));
 					acceptInteraction = false;
 				} else {

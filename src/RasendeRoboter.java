@@ -21,6 +21,7 @@ import java.awt.event.WindowListener;
 import java.awt.event.WindowStateListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,17 +49,19 @@ import javax.swing.Timer;
 import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
 
 public class RasendeRoboter {
-	
+
 	private JFrame mainFrame;
 
 	private JButton rewindButton;
 	private JButton resetButton;
 	private JButton passTurnButton;
-	
+	private JButton startButton;
+
 	private String enCour;
-	
+
 
 	//private PionComponent pion;
 	private BoardComponent board;
@@ -72,14 +75,17 @@ public class RasendeRoboter {
 
 	private static JLabel gameTimeLabel;
 	private static JLabel solutionTimeLabel;
-	private GameData gameManager;
+	private GamePartyModel  partyModel;
+	private GameOptionDialog optionDialog;
 	private Timer gameTimer;
+
 
 	public RasendeRoboter() {
 
-		gameManager = new GameData();
-		gameTimer = new Timer(1000, null);
+		//gameManager = new GameData();
+		//gameTimer = new Timer(1000, null);
 
+		partyModel = new GamePartyModel();
 		createView();
 		placeComponent();
 		createController();
@@ -91,11 +97,16 @@ public class RasendeRoboter {
 		rewindButton = new JButton("Rewind");
 		resetButton = new JButton("Reset Game");
 		passTurnButton = new JButton("Passer le tour");
+		startButton = new JButton("Start Party");
 
 		board = new BoardComponent(BoardGenerator.generateImages());
 		resetButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
 		resetButton.setBackground(Color.BLUE.darker());
 		resetButton.setForeground(Color.WHITE);
+
+		startButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+		startButton.setBackground(Color.GREEN);
+		startButton.setForeground(Color.GREEN.darker());
 
 		rewindButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
 		rewindButton.setBackground(Color.YELLOW);
@@ -106,7 +117,7 @@ public class RasendeRoboter {
 		passTurnButton.setForeground(Color.RED.darker().darker());
 
 		for(int i = 0; i < 4; i++) {
-			playerNameTextArea[i] = new JTextArea();
+			playerNameTextArea[i] = new JTextArea("Joureur " + (i+1));
 			playerNameTextArea[i].setEditable(false);
 			playerNameTextArea[i].setLineWrap(true);
 			playerNameTextArea[i].setWrapStyleWord(true);
@@ -123,15 +134,21 @@ public class RasendeRoboter {
 
 		gameTimeLabel = new JLabel("--");
 		solutionTimeLabel = new JLabel("--");
+
+		optionDialog = new GameOptionDialog(mainFrame);
 	}
 
 	private void placeComponent() {
 
 		JPanel p = new JPanel(new BorderLayout()); {
 
-			p.add(resetButton, BorderLayout.NORTH);
+			JPanel s = new JPanel(new GridLayout(2, 0)); {
+				s.add(startButton);
+				s.add(resetButton);
+			}
+			p.add(s, BorderLayout.NORTH);
 
-			JPanel s = new JPanel(new GridLayout(3, 0)); {				
+			s = new JPanel(new GridLayout(3, 0)); {				
 				JPanel q = new JPanel(new GridLayout(2, 0)); {
 					JPanel r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
 						r.add(new JLabel("Game Time (minutes) : "));
@@ -166,20 +183,21 @@ public class RasendeRoboter {
 					q.setBackground(Color.GRAY);
 				}
 				s.add(q);
-				
+
 				q = new JPanel(new BorderLayout()); {
 					JPanel t = new JPanel(new FlowLayout(FlowLayout.CENTER));{
 						t.add(new JLabel("Scores des joueurs"));
 					}
 					q.add(t, BorderLayout.NORTH);
-					
+
 					t = new JPanel(new GridLayout(4, 0)); {
 						for (int i = 0; i < 4; i++) {	
 							JPanel r = new JPanel(new FlowLayout(FlowLayout.RIGHT)); {							
+								playerNameTextArea[i].setText("Player "+(i+1));
+								playerScoreLabels[i].setText("0");
 								r.add(playerNameTextArea[i]);
 								r.add(playerScoreLabels[i]);
 								r.add(playersButton[i]);							
-								playersButton[i].setVisible(false);
 							}
 							t.add(r);
 						}
@@ -189,7 +207,7 @@ public class RasendeRoboter {
 				s.add(q);
 			}
 			p.add(s, BorderLayout.CENTER);
-			
+
 
 			s = new JPanel(new GridLayout(2, 0)); {
 				s.add(rewindButton);
@@ -198,21 +216,26 @@ public class RasendeRoboter {
 			p.add(s, BorderLayout.SOUTH);
 		}
 
-		mainFrame.add(board, BorderLayout.CENTER);
 		mainFrame.add(p, BorderLayout.EAST);
+		p = new JPanel(new GridLayout(0, 1)); {			
+			p.add(board);
+		}
+		mainFrame.add(p, BorderLayout.CENTER);
 	}
 
-	private void createController() {
+	/*private void createController() {
 
 		disactiveButton(rewindButton);
 		disactiveButton(passTurnButton);
+
+		partyModel.addPropertyChangeListener(PROP_IS_READY, lst);
 
 		board.addPropertyChangeListener(BoardComponent.PROP_READY, new PropertyChangeListener() {
 
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
-				gameManager.setTargetsList((List<Target>)evt.getNewValue());
-				showTarget(gameManager.getNextTarget());
+				//gameManager.setTargetsList((List<Target>)evt.getNewValue());
+				showTarget(partyModel.getNextTarget());
 			}
 		});
 
@@ -221,13 +244,13 @@ public class RasendeRoboter {
 			@Override
 			public void propertyChange(PropertyChangeEvent evt) {
 
-				Target currentTarget = gameManager.playedTargets.get(gameManager.playedTargets.size()-1);
+				Target currentTarget = partyModel.playedTargets.get(partyModel.getPlayersNb()-1);
 				Case matchedCase = (Case)evt.getNewValue();
 
 				if (currentTarget.getType() == matchedCase.getType() && currentTarget.getColor() == matchedCase.getColor()) {
 
-					gameManager.currentPlayer.addPoint();
-					gameManager.setCurrentPlayer(GameData.NO_USER_INDEX);
+					//gameManager.currentPlayer.addPoint();
+					//gameManager.setCurrentPlayer(GameData.NO_USER_INDEX);
 
 					board.updatePionPosition();
 					board.releasePionFocus();
@@ -235,21 +258,21 @@ public class RasendeRoboter {
 					disactiveButton(rewindButton);
 					disactiveButton(passTurnButton);
 
-					gameTimer.stop();
+					//gameTimer.stop();
 
-					int nextId = gameManager.getNextTarget();
+					int nextId = partyModel.getNextTarget();
 
 					if (nextId != -1) {
 						showTarget(nextId);
-						for(int i = 0, size = gameManager.getPlayersNb(); i < size; i++) {							
+						for(int i = 0, size = partyModel.getPlayersNb(); i < size; i++) {							
 							activeButton(playersButton[i]);
 						}
 						gameTimer.start();
 					} else {
-						
+
 						showWinner();
 					}
-					gameManager.refreshSolutionTime();
+					//gameManager.refreshSolutionTime();
 				}
 			}
 		});
@@ -316,19 +339,19 @@ public class RasendeRoboter {
 				board.rewindPions();
 			}
 		});
-		
+
 		passTurnButton.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				
+
 				disactiveButton(passTurnButton);
 				disactiveButton(rewindButton);
 				board.setInteractions(false);
 				for (int i = 0, size = gameManager.getPlayersNb(); i < size; i++) {
 					activeButton(playersButton[i]);
 				}
-				gameManager.refreshSolutionTime();
+				//gameManager.refreshSolutionTime();
 				board.rewindPions();
 			}
 		});
@@ -349,87 +372,294 @@ public class RasendeRoboter {
 				}
 			}
 		});
-		
-		mainFrame.addKeyListener(new KeyAdapter() {
-			
-			public void keyTyped(KeyEvent e) {
-				// TODO Auto-generated method stub
-			// gettOut pour recuperer la varible qui decroit avec les seconde de la main du joueur il es declarer et mis a chaque fois a jour dans la calss Board.java
-				if(gameManager.getTime() ==59) {
-					//no time gére le temps qui est attribuer au jouer la fonction est diponible dans la calss Board.java
-				//bord.noTime();
-				//bord.timer.start();
-				}
-				if (e.getKeyChar() =='˛') {
-					//System.out.println(bord.gettOut());
-					if(gameManager.getTime() !=59) {
-						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-					}else {		
-						JOptionPane.showMessageDialog(null, gameManager.playerList.get(0).getPseudo() + "en cour de jeu");
-						this.keyPressed = e.getKeyChar();
-						enCour = gameManager.playerList.get(0).getPseudo();
-					}
-				}
-				
-				if (e.getKeyChar() =='0') {
-					if(gameManager.getTime() !=59) {
-						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-						
-					}else {
-						
-						this.keyPressed = e.getKeyChar();
-						JOptionPane.showMessageDialog(null,gameManager.playerList.get(1).getPseudo() + "en cour de jeu");
-						enCour = gameManager.playerList.get(1).getPseudo();
-					}
-				}
-				if (e.getKeyChar() =='-') {
-					if(gameManager.getTime() !=59) {
-						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-					}else {
-						
-						this.keyPressed = e.getKeyChar();
-						JOptionPane.showMessageDialog(null, gameManager.playerList.get(2).getPseudo() + "en cour de jeu");
-						enCour = gameManager.playerList.get(2).getPseudo();
 
+//		mainFrame.addKeyListener(new KeyAdapter() {
+//			
+//			public void keyTyped(KeyEvent e) {
+//				// TODO Auto-generated method stub
+//			// gettOut pour recuperer la varible qui decroit avec les seconde de la main du joueur il es declarer et mis a chaque fois a jour dans la calss Board.java
+//				if(gameManager.getTime() ==59) {
+//					//no time gére le temps qui est attribuer au jouer la fonction est diponible dans la calss Board.java
+//				//bord.noTime();
+//				//bord.timer.start();
+//				}
+//				if (e.getKeyChar() =='˛') {
+//					//System.out.println(bord.gettOut());
+//					if(gameManager.getTime() !=59) {
+//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
+//					}else {		
+//						JOptionPane.showMessageDialog(null, gameManager.playerList.get(0).getPseudo() + "en cour de jeu");
+//						this.keyPressed = e.getKeyChar();
+//						enCour = gameManager.playerList.get(0).getPseudo();
+//					}
+//				}
+//				
+//				if (e.getKeyChar() =='0') {
+//					if(gameManager.getTime() !=59) {
+//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
+//						
+//					}else {
+//						
+//						this.keyPressed = e.getKeyChar();
+//						JOptionPane.showMessageDialog(null,gameManager.playerList.get(1).getPseudo() + "en cour de jeu");
+//						enCour = gameManager.playerList.get(1).getPseudo();
+//					}
+//				}
+//				if (e.getKeyChar() =='-') {
+//					if(gameManager.getTime() !=59) {
+//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
+//					}else {
+//						
+//						this.keyPressed = e.getKeyChar();
+//						JOptionPane.showMessageDialog(null, gameManager.playerList.get(2).getPseudo() + "en cour de jeu");
+//						enCour = gameManager.playerList.get(2).getPseudo();
+//
+//					}
+//				}
+//				if (e.getKeyChar() =='c') {
+//					if(gameManager.getTime() != 59) {
+//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
+//					}else {
+//						 
+//						this.keyPressed = e.getKeyChar();
+//						JOptionPane.showMessageDialog(null, gameManager.playerList.get().getPseudo() + "en cour de jeu");
+//						enCour = gameManager.playerList.get(3).getPseudo();
+//					}
+//				}
+//				
+//				}
+//		});
+	}
+	 */
+
+	private void createController() {
+		mainFrame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				partyModel.pauseGame();
+
+				if (JOptionPane.showConfirmDialog(null,
+						"     La partie n'est pas terminée.\nVoulez-vous quand même la quitter ?",
+						"Partie en cours",
+						JOptionPane.ERROR_MESSAGE, JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+					System.exit(0);
+				} 
+
+				partyModel.resumeGame();
+			}
+		});
+
+
+		optionDialog.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				setPartyOptions(optionDialog.getOptions());
+			}
+		});
+		
+		
+
+		partyModel.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+
+				if (! partyModel.isReady()) {
+
+					gameTimeLabel.setText((partyModel.getTime()/60 == -1) ? "∞" : Integer.toString(partyModel.getTime()/60)+":00");
+					solutionTimeLabel.setText((partyModel.getSolutionTime()/60 == -1) ? "∞" : Integer.toString(partyModel.getSolutionTime()/60)+":00");
+
+					List<Player> playerList = ((GamePartyModel) e.getSource()).getPlayers();
+
+					for (int i = 0; i < playerList.size(); i++) {
+
+						int index = i; 
+						playerNameTextArea[i].setText(playerList.get(i).getPseudo());
+						playerScoreLabels[i].setText(playerList.get(i).getPoints()+"");
+
+						playersButton[i].setVisible(true);
+						playerNameTextArea[i].setVisible(true);
+						playerScoreLabels[i].setVisible(true);
+
+						playersButton[i].addActionListener(new ActionListener() {
+
+							@Override
+							public void actionPerformed(ActionEvent e) {
+
+								disactiveButton((JButton) e.getSource());
+								activeButton(rewindButton);
+								activeButton(passTurnButton);
+								switchToUser(index);					
+								board.setInteractions(true);
+							}
+						});
+					}
+
+
+					activeButton(startButton);					
+				} else if (partyModel.isStarted()) {
+
+					int gameTime = partyModel.getTime();
+					int solutionTime = partyModel.getSolutionTime();
+
+
+					gameTimeLabel.setText(gameTime/60 + ":"+gameTime%60);
+					solutionTimeLabel.setText(solutionTime/60 + ":"+solutionTime%60);
+
+
+
+					if (gameTime == 0) {
+						for (int i = 0; i < 4; i++) {						
+							disactiveButton(playersButton[i]);
+						}
+						disactiveButton(passTurnButton);
+						disactiveButton(rewindButton);
+						disactiveButton(startButton);
+
+						showWinner();
+
+					} else if (solutionTime == 60) {
+						showTarget(partyModel.getNextTarget());
 					}
 				}
-				if (e.getKeyChar() =='c') {
-					if(gameManager.getTime() != 59) {
-						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-					}else {
-						 
-						this.keyPressed = e.getKeyChar();
-						JOptionPane.showMessageDialog(null, gameManager.playerList.get(3).getPseudo() + "en cour de jeu");
-						enCour = gameManager.playerList.get(3).getPseudo();
+			}
+		});
+
+		startButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				JButton btn = (JButton) e.getSource();				
+
+				disactiveButton(btn);
+				activeButton(resetButton);
+				//activeButton(passTurnButton);
+
+				board.setVisible(true);
+
+				for (int i = 0; i < partyModel.getPlayersNb(); i++) {
+					activeButton(playersButton[i]);
+				}
+
+				partyModel.startParty();
+			}
+		});
+
+		passTurnButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				if (! board.acceptInteractions()) {
+					if (rewindButton.isEnabled()) {
+						disactiveButton(rewindButton);					
 					}
+					showTarget(partyModel.getNextTarget());					
+				} else {
+					partyModel.refreshSolutionTime();
+					board.rewindPions();					
+					board.setInteractions(false);
 				}
 				
+				for (int i = 0, size = partyModel.getPlayersNb(); i < size; i++) {
+					activeButton(playersButton[i]);
 				}
+			}
+		});
+
+		resetButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				RasendeRoboter game = new RasendeRoboter();
+				mainFrame.dispose();
+				game.display();
+			}
+		});
+
+		rewindButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				board.rewindPions();
+			}
+		});
+
+		board.addPropertyChangeListener(BoardComponent.PROP_READY, new PropertyChangeListener() {
+
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				partyModel.setTargetsList((List<Target>)evt.getNewValue());
+				showTarget(partyModel.getNextTarget());
+			}
+		});
+		
+		board.addPropertyChangeListener(BoardComponent.PROP_HAVE_MATCH, new PropertyChangeListener() {
+
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+
+				//Target currentTarget = partyModel.playedTargets.get(partyModel.getPlayersNb()-1);
+				
+				Target currentTarget = partyModel.getCurrentTarget();
+				
+				Case matchedCase = (Case)evt.getNewValue();
+
+				if (currentTarget.getType() == matchedCase.getType() && currentTarget.getColor() == matchedCase.getColor()) {
+
+					partyModel.addPointToCurrentPlayer();
+					board.updatePionPosition();
+					board.releasePionFocus();
+
+					disactiveButton(rewindButton);
+					disactiveButton(passTurnButton);
+
+					partyModel.pauseGame();
+					
+					int nextId = partyModel.getNextTarget();
+
+					if (nextId != -1) {
+						showTarget(nextId);
+						for(int i = 0, size = partyModel.getPlayersNb(); i < size; i++) {							
+							activeButton(playersButton[i]);
+						}
+						partyModel.resumeGame();
+					} else {
+
+						showWinner();
+					}
+					//gameManager.refreshSolutionTime();
+				}
+			}
 		});
 	}
-	
+
 	private void showWinner() {
 		String text = "";
-		
-		for (Player winner : gameManager.getWinners()) {
-			text += winner.getPseudo() + "avec "+ winner.getPoints()+" points\n";
+
+		for (Player winner : partyModel.getWinners()) {
+			text += (winner.getPseudo() + "\n");
 		}
-		
-		JOptionPane.showMessageDialog(null, "La partie est terminée ! Le(s) gagnant(s): \n"+text);
-		
+
+		JOptionPane.showMessageDialog(null, "La partie est terminée ! Le(s) gagnant(s) avec "+partyModel.getWinners().get(0).getPoints()+": points \n"+text);
+
 		for (JButton btn : playersButton) {
 			disactiveButton(btn);
 		}
-		
+
 		disactiveButton(passTurnButton);
 		disactiveButton(rewindButton);
+		
+		partyModel.pauseGame();
 	}
 
 
 	private void switchToUser(int userIndex) {
-		gameManager.setCurrentPlayer(userIndex);
+		partyModel.setCurrentPlayer(userIndex);
 
-		for (int i = 0, size = gameManager.getPlayersNb(); i < size; i++) {
+		for (int i = 0, size = partyModel.getPlayersNb(); i < size; i++) {
 			if (userIndex != i) {
 				disactiveButton(playersButton[i]);
 			}
@@ -448,240 +678,106 @@ public class RasendeRoboter {
 		button.repaint();
 	}
 
-	public void display(List<Integer> options) {
-		gameManager.init(options);
+	private void prepareParty() {
+		for (int i = 0; i < 4; i++) {						
+			playerNameTextArea[i].setVisible(false);
+			playerScoreLabels[i].setVisible(false);
+			playersButton[i].setVisible(false);
+		}
+
+		disactiveButton(resetButton);
+		disactiveButton(rewindButton);
+		disactiveButton(startButton);
+		disactiveButton(passTurnButton);
+
+		for (JButton jButton : playersButton) {
+			disactiveButton(jButton);
+		}
+		board.setVisible(false);
+	}
+
+	public void display() {
 
 		mainFrame.setResizable(false);
 		mainFrame.pack();
 		mainFrame.setVisible(true);
 		mainFrame.setLocationRelativeTo(null);
 		mainFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-		setPlayers(options.get(0));
+
+		prepareParty();
+
+
+		//gameManager.init(options);
+		//setPlayers(options.get(0));
+		//board.setVisible(false);
+		optionDialog.setVisible(true);
 	}
 
 	private void showTarget(int targetId) {
 
-		ResourceLoarder resourceLoarder = new ResourceLoarder(ResourceLoarder.TARGETS_IMAGES_DIR);
+		if (targetId != -1) {
+			ResourceLoarder resourceLoarder = new ResourceLoarder(ResourceLoarder.TARGETS_IMAGES_DIR);
 
-		ImageIcon targetIcon = new ImageIcon(resourceLoarder.getResource("target"+targetId+".png").getAbsolutePath());
-		targetIcon.getImage().flush();
-		targetImage.setIcon(targetIcon);
+			ImageIcon targetIcon = new ImageIcon(resourceLoarder.getResource("target"+targetId+".png").getAbsolutePath());
+			targetIcon.getImage().flush();
+			targetImage.setIcon(targetIcon);
 
-		ImageIcon robotIcon = new ImageIcon(resourceLoarder.getResource(targetId/4+".png").getAbsolutePath());
-		robotIcon.getImage().flush();
-		robotImage.setIcon(robotIcon);		
+			ImageIcon robotIcon = new ImageIcon(resourceLoarder.getResource(targetId/4+".png").getAbsolutePath());
+			robotIcon.getImage().flush();
+			robotImage.setIcon(robotIcon);
+		} else {
+			
+			partyModel.pauseGame();
+			showWinner();
+		}
 	}
 
 
-	private void setPlayers(int playersNb) {
+	private void setPartyOptions(List<Integer> options) {
 
 		ArrayList<Player> players = new ArrayList<Player>();
 
-		for (int i = 0; i < playersNb; i++) {
+		int plNb = options.remove(0);
 
-			final int index = i;
-			Player p = new Player((JOptionPane.showInputDialog("Nom du joueur "+(i+1)+" :")));
+		for (int i = 0; i < plNb; i++) {
 
-			p.addChangeListener(new ChangeListener() {
-				@Override
-				public void stateChanged(ChangeEvent e) {
-					playerScoreLabels[index].setText(p.getPoints()+"");
+			String pseudo = null;
+
+			do {				
+				pseudo = JOptionPane.showInputDialog("Nom du joueur "+(i+1)+" :");
+
+
+				if (pseudo == null) {
+					optionDialog.setVisible(true);
+					break;
+				} else if (pseudo.isBlank()) {
+					JOptionPane.showMessageDialog(null, "Vous devez choisir un pseudo");
 				}
-			});
+			} while (pseudo == null || pseudo.isBlank());
 
-			playerNameTextArea[i].setText(p.getPseudo());
-			playerScoreLabels[i].setText(p.getPoints()+"");
-			playersButton[i].setVisible(true);
+			if (pseudo == null) {
+				break;
+			}
+
+			Player p = new Player(pseudo);
 			players.add(p);
-			
 		}
-		gameManager.setPlayers(players);
+
+		if (players.size() == plNb) {
+			partyModel.init(options, players);
+		}
 	}
+
 
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
 			public void run() {
-				RasendeRoboter game = new RasendeRoboter();
-				game.display(GameOptionDialog.showOptionDialog(game.mainFrame));
-				/*ArrayList<Integer> opt = new ArrayList<Integer>();
-				opt.add(1);
-				opt.add(1*60);
-				opt.add(7*60);
-				game.display(opt);*/
-				//				JOptionPane.showMessageDialog(null, panel, "Paramètres de la partie",
-				//						JOptionPane.PLAIN_MESSAGE);
 
-				/*try {
-					playersNb = Integer.parseInt(JOptionPane.showInputDialog("Entrez le nombre de joueurs: "));
-				} catch (NumberFormatException e) {
-					JOptionPane.showConfirmDialog(null, "La valeur entrée est incorrecte", "Erreur", JOptionPane.ERROR_MESSAGE);
-				}*/
+				RasendeRoboter game = new RasendeRoboter();
+				game.display();
 			}
 		});
-	}
-
-	public class GameData {
-
-		private volatile int gameTime;
-		private volatile int solutionTime;
-		private volatile int currentSolutionTime;
-
-		private List<Target> targetsList;
-		private List<Target> playedTargets;
-
-		private List<Player> playerList;
-
-		private Player currentPlayer;
-
-		public final static int NO_USER_INDEX = -1;
-
-		public GameData() {	
-			targetsList = new ArrayList<Target>();
-			playedTargets = new ArrayList<Target>();
-		}
-
-		public TreeSet<Player> getWinners() {
-			
-			TreeSet<Player> winners = new TreeSet<Player>(new Comparator<Player>() {
-
-				@Override
-				public int compare(Player p1, Player p2) {
-					return p1.getPoints() - p2.getPoints();
-				}
-			});
-			
-			
-			for (Player player : playerList) {
-				winners.add(player);
-			}
-			
-			for (Player player : winners.headSet(winners.first(), false)) {
-				winners.remove(player);
-			}
-			
-			return winners;
-		}
-
-		public void refreshSolutionTime() {
-			currentSolutionTime = solutionTime;
-		}
-
-		public void updateSolutionTime() {
-
-			Thread updater = new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-					currentSolutionTime -= 1;
-
-					int min = currentSolutionTime / 60;
-					int sec = currentSolutionTime % 60;
-
-					SwingUtilities.invokeLater(new Runnable() {
-
-						@Override
-						public void run() {							
-							solutionTimeLabel.setText(min+":"+sec);
-						}
-					});
-
-				}
-			});
-			updater.start();
-		}
-
-		public void updateGameTime() {
-
-			Thread updater = new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-					gameTime -= 1;
-
-					int min = gameTime / 60;
-					int sec = gameTime % 60;
-
-					SwingUtilities.invokeLater(new Runnable() {		
-						@Override
-						public void run() {							
-							gameTimeLabel.setText(min+":"+sec);
-						}
-					});
-				}
-			});
-			updater.start();
-		}
-
-		public int getPlayersNb() {
-			return playerList.size();
-		}
-
-		public int getTime() {
-			return gameTime;
-		}
-
-		public int getSolutionTime() {
-			return solutionTime;
-		}
-
-		public int getNextTarget() {
-
-			int nextTargetId = -1;
-
-			if (targetsList.size() > 0) {
-				Target randomTarget = targetsList.remove(new Random().nextInt(targetsList.size())); 
-				playedTargets.add(randomTarget);
-				nextTargetId = randomTarget.getId();				
-			}
-
-			return nextTargetId;
-		}
-
-
-		public void setPlayers(List<Player> players) {
-			playerList = players; 
-		}
-
-		public void setTime(int t) {
-			gameTime = t;
-
-			if (t == -1) {
-				gameTimeLabel.setText("∞");
-			} else {	
-				gameTimeLabel.setText(Integer.toString(t/60)+":00");
-			}
-		}
-
-		public void setSolutionTime(int slTime) {
-			solutionTime = slTime;
-
-			if (solutionTime == -1) {
-				solutionTimeLabel.setText("∞");
-			} else {
-				solutionTimeLabel.setText(Integer.toString(slTime/60)+":00");
-			}
-			currentSolutionTime = solutionTime;
-		}
-
-		public void setTargetsList(List<Target> targetsList) {
-			this.targetsList = targetsList;
-		}
-
-		void init(List<Integer> options) {
-			this.setTime(options.get(1)*60);
-			this.setSolutionTime(options.get(2)*60);
-			
-			System.out.println(options.get(0));
-		}
-
-		public void setCurrentPlayer(int i) {
-			if (i >= 0) {
-				currentPlayer = playerList.get(i);
-			} else {
-				currentPlayer = null;
-			}
-		}
 	}
 }

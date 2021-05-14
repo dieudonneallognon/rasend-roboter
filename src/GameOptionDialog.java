@@ -1,9 +1,11 @@
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
@@ -11,26 +13,36 @@ import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
 
 
 public class GameOptionDialog extends JDialog{
 
 	public static final String [] PLAYERS_NUMBERS = new String [] {"2", "3", "4"};
-	public static final String [] GAME_TIMES = new String[] { "7", "10", "20", "---"};
+	public static final String [] GAME_TIMES = new String[] { "1", "10", "20", "---"};
 	public static final String [] GAME_RESPONSE_TIMES = new String[] { "1", "2", "3", "---"};
 	public static final JComboBox<String> PLAYERS_NUMBER_COMBO = new JComboBox<String>(PLAYERS_NUMBERS);
-	protected static final JComboBox<String> GAME_TIME_COMBO = new JComboBox<String>(GAME_TIMES);;
-	protected static final JComboBox<String> RESPONSE_TIME_COMBO = new JComboBox<String>(GAME_RESPONSE_TIMES);;
-
-
-	public static ArrayList<Integer> showOptionDialog(JFrame owner) {
-
-		JDialog dialog = new JDialog(owner, "Paramères de la partie", true);
-
+	protected static final JComboBox<String> GAME_TIME_COMBO = new JComboBox<String>(GAME_TIMES);
+	protected static final JComboBox<String> RESPONSE_TIME_COMBO = new JComboBox<String>(GAME_RESPONSE_TIMES);
+	
+	private  EventListenerList listenerList;
+	private  ChangeEvent changeEvent;
+	private ArrayList<Integer> options = new ArrayList<Integer>();
+	
+	public GameOptionDialog(JFrame owner) {
+		// TODO Auto-generated constructor stub
+		
+		super(owner, "Paramètres de la partie", true);
+		
+		listenerList = new EventListenerList();
+		
 		JButton startButton = new JButton("Commencer");
-
-		dialog.add(new JPanel(), BorderLayout.NORTH);		
+		
+		add(new JPanel(), BorderLayout.NORTH);		
 		JPanel panel = new JPanel(new GridLayout(4, 2)); {
 			panel.add(new JLabel("Nombre de joueurs: "));
 			panel.add(PLAYERS_NUMBER_COMBO);
@@ -39,76 +51,84 @@ public class GameOptionDialog extends JDialog{
 			panel.add(new JLabel("Temps de réponse (minutes): "));
 			panel.add(RESPONSE_TIME_COMBO);
 		}
-		dialog.add(panel, BorderLayout.CENTER);		
-		dialog.add(startButton, BorderLayout.SOUTH);
-		//			add(
-		//					new JLabel(
-		//							"<html><h1><i>Core Java</i></h1><hr>By Cay Horstmann and Gary Cornell</html>"),
-		//					BorderLayout.CENTER);
+		add(panel, BorderLayout.CENTER);		
+		add(startButton, BorderLayout.SOUTH);
+		
 
-
-
-		PLAYERS_NUMBER_COMBO.setSelectedIndex(0);
-		GAME_TIME_COMBO.setSelectedIndex(0);
-		RESPONSE_TIME_COMBO.setSelectedIndex(0);
-
-		ArrayList<Integer> list = new ArrayList<Integer>();
-
-		list.add(Integer.parseInt((String) PLAYERS_NUMBER_COMBO.getSelectedItem()));
-		list.add(Integer.parseInt((String) GAME_TIME_COMBO.getSelectedItem()));
-		list.add(Integer.parseInt((String) RESPONSE_TIME_COMBO.getSelectedItem()));
-
-		PLAYERS_NUMBER_COMBO.addItemListener(new ItemListener() {
-
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				list.set(Integer.parseInt((String) PLAYERS_NUMBER_COMBO.getSelectedItem()), 0);
+		startButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				setVisible(false);
+				
+				options.clear();
+				options.add(Integer.parseInt((String) PLAYERS_NUMBER_COMBO.getSelectedItem()));
+				
+				try {
+					options.add(Integer.parseInt((String)GAME_TIME_COMBO.getSelectedItem()));
+				} catch (NumberFormatException e) {
+					options.add(-1);
+				}
+				
+				try {
+					options.add(Integer.parseInt((String)RESPONSE_TIME_COMBO.getSelectedItem()));
+				} catch (NumberFormatException e) {
+					options.add(-1);
+				}
+				
+				
+				fireStateChanged();
 			}
 		});
-
-		RESPONSE_TIME_COMBO.addItemListener(new ItemListener() {
-
+		
+		addWindowListener(new WindowAdapter() {
 			@Override
-			public void itemStateChanged(ItemEvent e) {
-				// TODO Auto-generated method stub
-				try {
-					list.set(Integer.parseInt((String)RESPONSE_TIME_COMBO.getSelectedItem()), 1);
-				} catch (NumberFormatException ex) {
-					list.add(-1);
+			public void windowClosing(WindowEvent e) {
+				if (JOptionPane.showConfirmDialog(null,
+						"     Quitter le jeu ?",
+						"Quitter",
+						JOptionPane.ERROR_MESSAGE, JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+					System.exit(0);
 				}
 			}
 		});
-
-		GAME_TIME_COMBO.addItemListener(new ItemListener() {
-
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				try {
-					list.set(Integer.parseInt((String)GAME_TIME_COMBO.getSelectedItem()), 2);
-				} catch (NumberFormatException ex) {
-					list.add(-1);
-				}	
-			}
-		});
-
-
-		startButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event)
-			{
-				dialog.setVisible(false);
-			}
-		});
-
-		dialog.pack();
-		dialog.setLocationRelativeTo(null);
-		dialog.setVisible(true);
 		
-		System.out.println(list.get(0));
-
-		System.out.println(list.get(1));
-
-		System.out.println(list.get(2));
-
-		return list;		
+		
+		
+		pack();
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+		
+		
 	}
+	
+	public ArrayList<Integer> getOptions() {
+		return new ArrayList<Integer>(options);
+	}
+	
+	
+	
+	
+	
+	
+	public void addChangeListener(ChangeListener listener) {
+		listenerList.add(ChangeListener.class, listener);
+	}
+	
+	public void removeChangeListener(ChangeListener listener) {
+		
+		listenerList.remove(ChangeListener.class, listener);
+	}
+	
+	protected void fireStateChanged() {
+		Object[] listeners = listenerList.getListenerList();
+		for (int i = listeners.length - 2; i >= 0; i -= 2) {
+			if (listeners[i] == ChangeListener.class) {
+				if (changeEvent == null) {
+					changeEvent = new ChangeEvent(this);
+				}
+				((ChangeListener) listeners[i + 1]).stateChanged(changeEvent);
+			}
+		}
+	}
+	
+	
 }
