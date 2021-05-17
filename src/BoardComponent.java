@@ -118,6 +118,10 @@ public class BoardComponent extends JPanel {
 						} else if (currentFocused == pionComponent) {
 							releasePionFocus();
 						}
+					} else {
+						if (currentFocused != null) {
+							releasePionFocus();
+						}
 					}
 				}
 			});
@@ -204,7 +208,19 @@ public class BoardComponent extends JPanel {
 
 			pionComponent.getModel().setOldCoord(new Board.Coord(currentCoord.getRow(), currentCoord.getColumn()));
 			pionComponent.getModel().setRewindCoord(new Board.Coord(currentCoord.getRow(), currentCoord.getColumn()));
+			pionComponent.getModel().resetCount();
 		}
+	}
+	
+	public int getMovesCount() {
+		
+		int moves = 0;
+		
+		for (PionComponent pionComponent : pionList) {
+			moves += pionComponent.getModel().getCount();
+		}
+		
+		return moves;
 	}
 
 

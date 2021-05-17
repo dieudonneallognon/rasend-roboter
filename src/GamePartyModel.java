@@ -18,8 +18,8 @@ import javax.swing.event.EventListenerList;
 public class GamePartyModel {
 
 		private volatile int gameTime;
-		private volatile int solutionTime;
-		private volatile int currentSolutionTime;
+		private volatile int reflexionTime;
+		private volatile int currentReflexionTime;
 		
 		private boolean ready;
 		private boolean started;
@@ -42,8 +42,6 @@ public class GamePartyModel {
 		private Timer gameChrono;
 		
 		private Thread updater;
-
-		public final static int NO_USER_INDEX = -1;
 		
 		public GamePartyModel () {	
 			targetsList = new ArrayList<Target>();
@@ -58,22 +56,20 @@ public class GamePartyModel {
 			return winnersList;
 		}
 
-		public void refreshSolutionTime() {
-			currentSolutionTime = solutionTime;
+		public void resetReflexionTime() {
+			currentReflexionTime = reflexionTime;
 		}
 
-		public void updateSolutionTime() {
-			currentSolutionTime -= 1;
+		public void updateReflexionTime() {
 			
-			if (currentSolutionTime == 0) {
-				refreshSolutionTime();
+			if (reflexionTime > 0 && (currentReflexionTime -= 1) == 0) {
+				resetReflexionTime();
 			}
 		}
 
 		public void updateGameTime() {
-			gameTime -= 1;
 			
-			if (gameTime == 0) {
+			if (gameTime > 0 && ((gameTime -= 1) == 0)) {
 				gameChrono.stop();
 			}
 		}
@@ -86,21 +82,22 @@ public class GamePartyModel {
 			return gameTime;
 		}
 
-		public int getSolutionTime() {
-			return currentSolutionTime;
+		public int getReflexionTime() {
+			return currentReflexionTime;
 		}
 
-		public int getNextTarget() {
-
-			int nextTargetId = -1;
-
-			if (targetsList.size() > 0) {
+		public int getNextTarget() throws EmptyTargetListException{			
+			
+			try {
+				
 				Target randomTarget = targetsList.remove(new Random().nextInt(targetsList.size())); 
 				playedTargets.add(randomTarget);
-				nextTargetId = randomTarget.getId();				
+				
+				return randomTarget.getId();
+				
+			} catch (IllegalArgumentException e) {
+				throw new EmptyTargetListException("No more target to play !");
 			}
-
-			return nextTargetId;
 		}
 
 
@@ -113,26 +110,6 @@ public class GamePartyModel {
 			return new ArrayList<Player>(playerList);
 		}
 
-		public void setTime(int t) {
-			gameTime = t;
-
-			if (t == -1) {
-				gameTimeLabel.setText("∞");
-			} else {	
-				gameTimeLabel.setText(Integer.toString(t/60)+":00");
-			}
-		}
-
-		public void setSolutionTime(int slTime) {
-			
-
-			if (solutionTime == -1) {
-				solutionTimeLabel.setText("∞");
-			} else {
-				solutionTimeLabel.setText(Integer.toString(slTime/60)+":00");
-			}
-			currentSolutionTime = solutionTime;
-		}
 
 		public void setTargetsList(List<Target> targetsList) {
 			this.targetsList = targetsList;
@@ -141,8 +118,8 @@ public class GamePartyModel {
 		void init(List<Integer> options, List<Player> players) {
 			
 			gameTime = options.get(0)*60;
-			solutionTime = options.get(1)*60;
-			currentSolutionTime = options.get(1)*60;
+			reflexionTime = options.get(1)*60;
+			currentReflexionTime = options.get(1)*60;
 			
 			setPlayers(players);
 			fireStateChanged();
@@ -150,19 +127,23 @@ public class GamePartyModel {
 			ready = true;
 		}
 
-		public void setCurrentPlayer(int i) {
-			if (i >= 0) {
-				currentPlayer = playerList.get(i);
-			} else {
+		public void setCurrentPlayer(Player p) {
+			try {
+				currentPlayer = p;
+			} catch (IndexOutOfBoundsException e) {
 				currentPlayer = null;
 			}
+		}
+		
+		public int getCurrentPlayerNum() {
+			return playerList.indexOf(currentPlayer);
 		}
 		
 		public boolean isReady() {
 			return ready;
 		}
 		
-		public boolean isStarted() {
+		public boolean hasStarted() {
 			return started;
 		}
 		
@@ -174,7 +155,7 @@ public class GamePartyModel {
 				winnersList.add(currentPlayer);
 			} else {
 				
-				ListIterator<Player> it = playerList.listIterator();
+				ListIterator<Player> it = winnersList.listIterator();
 				
 				while (it.hasNext()) {
 					Player pl = (Player) it.next();
@@ -190,54 +171,61 @@ public class GamePartyModel {
 			currentPlayer = null;
 		}
 		
+		public boolean chronoIsActive() {
+			return gameTime > 0 || reflexionTime > 0;
+		}
+		
 		
 		
 		
 		
 		public void startParty() {
 			
-			gameChrono = new Timer(1000, new ActionListener() {
-				
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					
-					updater = new Thread(new Runnable() {
-						
-						@Override
-						public void run() {
-							updateGameTime();
-							updateSolutionTime();
-							
-							SwingUtilities.invokeLater(new Runnable() {
-								@Override
-								public void run() {
-									fireStateChanged();
-								}
-							});
-						}
-					});
-					updater.start();
-				}
-			});
 			
-			gameChrono.start();
-			started = true;
+			if (chronoIsActive()) {
+				
+				gameChrono = new Timer(1000, new ActionListener() {
+					
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						
+						updater = new Thread(new Runnable() {
+							
+							@Override
+							public void run() {
+								updateGameTime();
+								updateReflexionTime();
+								
+								SwingUtilities.invokeLater(new Runnable() {
+									@Override
+									public void run() {
+										fireStateChanged();
+									}
+								});
+							}
+						});
+						updater.start();
+					}
+				});
+				
+				gameChrono.start();
+			}
+			started = true;			
 		}
 		
-		public void pauseGame() {
+		public void stopChrono() {
 			
 			if (gameChrono != null) {
 				gameChrono.stop();				
 			}
 		}
 		
-		public void resumeGame() {
+		public void startChrono() {
 			
 			if (gameChrono != null) {
 				gameChrono.start();
 			}
 		}
-			
 		
 		
 		public Target getCurrentTarget() {
@@ -246,6 +234,7 @@ public class GamePartyModel {
 		
 		protected void fireStateChanged() {
 			Object[] listeners = listenersList.getListenerList();
+			
 			for (int i = listeners.length - 2; i >= 0; i -= 2) {
 				if (listeners[i] == ChangeListener.class) {
 					if (changeEvent == null) {
@@ -272,5 +261,14 @@ public class GamePartyModel {
 		
 		public void removeChangeListener(ChangeListener listener) {
 			listenersList.remove(ChangeListener.class, listener);
+		}
+		
+		
+		public static class EmptyTargetListException extends Exception {
+			
+			public EmptyTargetListException(String msg) {
+				super(msg);
+			}
+			
 		}
 	}

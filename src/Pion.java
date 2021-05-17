@@ -96,6 +96,7 @@ public class Pion {
 			break;
 		}
 		
+		count++;
 		fireStateChanged();
 		return step;
 	}
@@ -173,5 +174,9 @@ public class Pion {
 	
 	public void setRewindCoord(Board.Coord rewindCoord) {
 		this.rewindCoord = rewindCoord;
+	}
+
+	public void resetCount() {
+		count = 0;
 	}
 }
