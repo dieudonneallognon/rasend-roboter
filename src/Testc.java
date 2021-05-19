@@ -1,14 +1,21 @@
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
 
 public class Testc {
 
 	public static void main(String [] args) {
 		
-		Face f = FaceGenerator.generateFace(FaceID.FIVE, FacePosition.TOP_LEFT);
+		//BoardGenerator.generateImages();
 		
-		for (int i = 0; i < 8; i++) {
-			for (int j = 0; j < 8; j++) {
-				System.out.println(f.getCases()[i][j]);
-			}
+		System.out.println(new File(BoardGenerator.BOARD_IMGS_DIR+"1.jpg"));
+		
+		try {
+			ImageIO.createImageInputStream(new File(BoardGenerator.BOARD_IMGS_DIR+"1.jpg"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	

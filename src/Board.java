@@ -186,7 +186,7 @@ public class Board {
 	}
 	
 	public static void testMatchOf(Pion model) {
-		if (Board.getCaseAt(model.getCoord()).match(model.getType())) {
+		if (Board.getCaseAt(model.getCoord()).matchPion(model.getType())) {
 			fireStateChanged();
 		}
 	}

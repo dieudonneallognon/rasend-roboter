@@ -18,8 +18,12 @@ import javax.swing.event.EventListenerList;
 public class GamePartyModel {
 
 		private volatile int gameTime;
+		
 		private volatile int reflexionTime;
 		private volatile int currentReflexionTime;
+		
+		private volatile int responseTime;
+		private volatile int currentResponseTime;
 		
 		private boolean ready;
 		private boolean started;
@@ -51,41 +55,81 @@ public class GamePartyModel {
 			listenersList = new EventListenerList();
 		}
 		
-		
-		public List<Player> getWinners() {
-			return winnersList;
+		void init(List<Integer> options, List<Player> players) {
+			
+			gameTime = options.get(0)*60;
+			
+			reflexionTime = options.get(1)*60;
+			currentReflexionTime = reflexionTime;
+			
+			responseTime = options.get(2)*60;
+			currentResponseTime = responseTime;
+			
+			setPlayers(players);
+			fireStateChanged();
+			
+			ready = true;
 		}
 
+		public int getGameTime() {
+			return gameTime;
+		}
+		
+		public void updateGameTime() {
+			
+			if (gameTime > 0 ) {
+				gameTime -= 1;
+			}
+		}
+
+		public int getReflexionTime() {
+			return currentReflexionTime;
+		}
+		
 		public void resetReflexionTime() {
 			currentReflexionTime = reflexionTime;
 		}
 
 		public void updateReflexionTime() {
 			
-			if (reflexionTime > 0 && (currentReflexionTime -= 1) == 0) {
-				resetReflexionTime();
-			}
+			currentReflexionTime -= 1;
+		}
+		
+		public int getResponseTime() {
+			return currentResponseTime;
+		}
+		
+		public void resetResponseTime() {
+			currentResponseTime = responseTime;
 		}
 
-		public void updateGameTime() {
+		public void updateResponseTime() {
 			
-			if (gameTime > 0 && ((gameTime -= 1) == 0)) {
-				gameChrono.stop();
-			}
+			currentResponseTime -= 1;
 		}
+		
 
+		public List<Player> getPlayers() {
+			return new ArrayList<Player>(playerList);
+		}
+		
 		public int getPlayersNb() {
 			return playerList.size();
 		}
-
-		public int getTime() {
-			return gameTime;
+		
+		public List<Player> getWinners() {
+			return winnersList;
 		}
-
-		public int getReflexionTime() {
-			return currentReflexionTime;
+		
+		public void setPlayers(List<Player> players) {
+			playerList = new ArrayList<Player>(players);
+			winnersList = new ArrayList<Player>(players);
 		}
-
+		
+		public Target getCurrentTarget() {
+			return playedTargets.get(playedTargets.size()-1);
+		}
+		
 		public int getNextTarget() throws EmptyTargetListException{			
 			
 			try {
@@ -99,54 +143,23 @@ public class GamePartyModel {
 				throw new EmptyTargetListException("No more target to play !");
 			}
 		}
-
-
-		public void setPlayers(List<Player> players) {
-			playerList = new ArrayList<Player>(players);
-			winnersList = new ArrayList<Player>(players);
-		}
 		
-		public List<Player> getPlayers() {
-			return new ArrayList<Player>(playerList);
-		}
-
-
 		public void setTargetsList(List<Target> targetsList) {
 			this.targetsList = targetsList;
 		}
 
-		void init(List<Integer> options, List<Player> players) {
-			
-			gameTime = options.get(0)*60;
-			reflexionTime = options.get(1)*60;
-			currentReflexionTime = options.get(1)*60;
-			
-			setPlayers(players);
-			fireStateChanged();
-
-			ready = true;
+		public int getCurrentPlayerNum() {
+			return playerList.indexOf(currentPlayer);
 		}
-
+		
 		public void setCurrentPlayer(Player p) {
 			try {
 				currentPlayer = p;
 			} catch (IndexOutOfBoundsException e) {
 				currentPlayer = null;
 			}
-		}
-		
-		public int getCurrentPlayerNum() {
-			return playerList.indexOf(currentPlayer);
-		}
-		
-		public boolean isReady() {
-			return ready;
-		}
-		
-		public boolean hasStarted() {
-			return started;
-		}
-		
+		}		
+
 		public void addPointToCurrentPlayer() {
 			
 			currentPlayer.addPoint();
@@ -170,6 +183,17 @@ public class GamePartyModel {
 			
 			currentPlayer = null;
 		}
+
+
+		
+		public boolean isReady() {
+			return ready;
+		}
+		
+		public boolean hasStarted() {
+			return started;
+		}
+		
 		
 		public boolean chronoIsActive() {
 			return gameTime > 0 || reflexionTime > 0;
@@ -177,10 +201,7 @@ public class GamePartyModel {
 		
 		
 		
-		
-		
 		public void startParty() {
-			
 			
 			if (chronoIsActive()) {
 				
@@ -193,8 +214,13 @@ public class GamePartyModel {
 							
 							@Override
 							public void run() {
-								updateGameTime();
-								updateReflexionTime();
+								
+								if (currentPlayer != null) {									
+									updateResponseTime();
+								} else {
+									updateGameTime();
+									updateReflexionTime();
+								}
 								
 								SwingUtilities.invokeLater(new Runnable() {
 									@Override
@@ -228,9 +254,7 @@ public class GamePartyModel {
 		}
 		
 		
-		public Target getCurrentTarget() {
-			return playedTargets.get(playedTargets.size()-1);
-		}
+		
 		
 		protected void fireStateChanged() {
 			Object[] listeners = listenersList.getListenerList();

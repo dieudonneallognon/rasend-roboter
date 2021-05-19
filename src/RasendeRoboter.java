@@ -1,8 +1,6 @@
 import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -10,7 +8,6 @@ import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -19,6 +16,8 @@ import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -27,8 +26,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 import javax.swing.WindowConstants;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -53,9 +53,13 @@ public class RasendeRoboter {
 	private JLabel gameTimeLabel;
 	private JLabel reflexionTimeLabel;
 	private JLabel currentPlayerNameLabel;
-	private JLabel solutionTimeLabel;
+	private JLabel responseTimeLabel;
 	private GamePartyModel  party;
 	private GameOptionDialog optionDialog;
+
+	private static final String NO_INFO = "--";
+	private static final int NO_USER = -1;
+	private static final int MAX_PLAYER_NUMBER = 4;
 
 	public RasendeRoboter() {
 
@@ -71,25 +75,25 @@ public class RasendeRoboter {
 	private void createView() {
 		mainFrame = new JFrame("RasendRoboter");
 
-		rewindButton = new JButton("Rewind");
-		resetButton = new JButton("Reset Game");
-		passTurnButton = new JButton("Passer le tour");
-		startButton = new JButton("Start Party");
-
 		board = new BoardComponent(BoardGenerator.generateImages());
-		resetButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+
+		resetButton = new JButton("Nouvelle partie");
+		resetButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
 		resetButton.setBackground(Color.BLUE.darker());
 		resetButton.setForeground(Color.WHITE);
 
-		startButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+		startButton = new JButton("Démarrer la partie");
+		startButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
 		startButton.setBackground(Color.GREEN);
 		startButton.setForeground(Color.GREEN.darker());
 
-		rewindButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+		rewindButton = new JButton("Rétablir les postions");
+		rewindButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
 		rewindButton.setBackground(Color.YELLOW);
 		rewindButton.setForeground(Color.YELLOW.darker().darker());		
 
-		passTurnButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+		passTurnButton = new JButton("Passer le tour");
+		passTurnButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
 		passTurnButton.setBackground(Color.RED);
 		passTurnButton.setForeground(Color.RED.darker().darker());
 
@@ -99,20 +103,22 @@ public class RasendeRoboter {
 			playerNameTextArea[i].setLineWrap(true);
 			playerNameTextArea[i].setWrapStyleWord(true);
 			playerNameTextArea[i].setBackground(mainFrame.getBackground());
-			playerScoreLabels[i] = new JLabel();
+
+			playerScoreLabels[i] = new JLabel("0");
+
 			playersButton[i] = new JButton("Trouvé");
 			playersButton[i].setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
 			playersButton[i].setBackground(Color.GREEN);
-			playersButton[i].setForeground(Color.GREEN.darker().darker());
+			playersButton[i].setForeground(Color.GREEN.darker());
 		}
 
-		targetImage = new JLabel("--");
-		robotImage = new JLabel("--");
+		targetImage = new JLabel();
+		robotImage = new JLabel();
 
-		gameTimeLabel = new JLabel("--");
-		reflexionTimeLabel = new JLabel("--");
-		currentPlayerNameLabel = new JLabel("--");
-		solutionTimeLabel = new JLabel("--");
+		gameTimeLabel = new JLabel("00:00");
+		reflexionTimeLabel = new JLabel("00:00");
+		currentPlayerNameLabel = new JLabel(NO_INFO);
+		responseTimeLabel = new JLabel("00:00");
 
 		optionDialog = new GameOptionDialog(mainFrame);
 	}
@@ -130,41 +136,46 @@ public class RasendeRoboter {
 			s = new JPanel(new GridLayout(3, 0)); {				
 				JPanel q = new JPanel(new GridLayout(4, 0)); {
 
-					JPanel r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
-						r.add(new JLabel("En cours de jeu:"));
-						r.add(currentPlayerNameLabel);
-						r.setOpaque(false);
-					}
-					q.add(r);					
-					
-					r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
-						r.add(new JLabel("Game Time (minutes) : "));
+					JPanel r = new  JPanel(new FlowLayout(FlowLayout.CENTER)); {
+						r.add(new JLabel("Temps de jeu (min): "));
 						r.add(gameTimeLabel);
 						r.setOpaque(false);
 					}
-					q.add(r);
+					q.add(r);					
 
 					r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
-						r.add(new JLabel("Temps de Réflexion (min) : "));
+						r.add(new JLabel("Temps de Réflexion (min): "));
 						r.add(reflexionTimeLabel);
 						r.setOpaque(false);
 					}
 					q.add(r);
-					
+
 					r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
-						r.add(new JLabel("Temps de Solution (min) : "));
-						r.add(solutionTimeLabel);
+						r.add(new JLabel("Temps de Solution (min): "));
+						r.add(responseTimeLabel);
 						r.setOpaque(false);
 					}
 					q.add(r);
-					
-					q.setBackground(Color.WHITE);
+
+					r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
+						r.add(new JLabel("Main à : "));
+						r.add(currentPlayerNameLabel);
+						r.setOpaque(false);
+					}
+					q.add(r);
+
+					q.setBackground(Color.YELLOW);
+					q.setBorder( BorderFactory.createTitledBorder(
+							BorderFactory.createLineBorder(Color.BLACK, 2),
+							"Infos de la partie",
+							TitledBorder.CENTER, TitledBorder.TOP
+							));
 				}
 				s.add(q);
 
-				q = new JPanel(new GridLayout(2, 2)); {
+				q = new JPanel(new GridLayout(2, 0)); {
 					JPanel r = new JPanel(new FlowLayout(FlowLayout.CENTER)); {
-						r.add(new JLabel("Target : "));
+						r.add(new JLabel("Objectif : "));
 						r.add(targetImage);
 						r.setOpaque(false);
 					}
@@ -175,28 +186,37 @@ public class RasendeRoboter {
 						r.setOpaque(false);
 					}
 					q.add(r);
-					q.setBackground(Color.GRAY);
+					q.setBackground(Color.GRAY.brighter());
+					//q.setBorder(BorderFactory.createTitledBorder(border, title, titleJustification, titlePosition, titleFont, titleColor));
+					q.setBorder( BorderFactory.createTitledBorder(
+							BorderFactory.createBevelBorder(BevelBorder.RAISED),
+							"Prochain point",
+							TitledBorder.CENTER, TitledBorder.TOP
+							));
 				}
 				s.add(q);
 
 				q = new JPanel(new BorderLayout()); {
-					JPanel t = new JPanel(new FlowLayout(FlowLayout.CENTER));{
-						t.add(new JLabel("Scores des joueurs"));
-					}
-					q.add(t, BorderLayout.NORTH);
 
-					t = new JPanel(new GridLayout(4, 0)); {
+					JPanel t = new JPanel(new GridLayout(4, 0)); {
 						for (int i = 0; i < 4; i++) {	
 							JPanel r = new JPanel(new FlowLayout(FlowLayout.RIGHT)); {							
-								playerNameTextArea[i].setText("Player "+(i+1));
-								playerScoreLabels[i].setText("0");
 								r.add(playerNameTextArea[i]);
 								r.add(playerScoreLabels[i]);
-								r.add(playersButton[i]);							
+								r.add(playersButton[i]);
+
+								playersButton[i].setVisible(true);
+								playerNameTextArea[i].setVisible(true);
+								playerScoreLabels[i].setVisible(true);
 							}
 							t.add(r);
 						}
 					}
+					q.setBorder( BorderFactory.createTitledBorder(
+							BorderFactory.createEtchedBorder(),
+							"Scores des joueurs",
+							TitledBorder.CENTER, TitledBorder.TOP
+							));
 					q.add(t);
 				}
 				s.add(q);
@@ -211,8 +231,10 @@ public class RasendeRoboter {
 			p.add(s, BorderLayout.SOUTH);
 		}
 
+		p.setBorder(BorderFactory.createEtchedBorder());
+
 		mainFrame.add(p, BorderLayout.EAST);
-		
+
 		mainFrame.add(board, BorderLayout.CENTER);
 	}
 
@@ -425,70 +447,64 @@ public class RasendeRoboter {
 	}
 	 */
 
+	public static boolean exitConfirmed() {
+
+		Object[] options = { "Oui", "Non" };
+
+		return (JOptionPane.showOptionDialog(null, "    La partie n'est pas terminée\nVoulez-vous quand même la quitter ?",
+				"Partie en cours",
+				JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
+				null, options, options[0]) == 0);
+
+	}
+
 	private void createController() {
 		mainFrame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				party.stopChrono();
 
-				if (JOptionPane.showConfirmDialog(null,
-						"     La partie n'est pas terminée.\nVoulez-vous quand même la quitter ?",
-						"Partie en cours",
-						JOptionPane.ERROR_MESSAGE, JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+				if (exitConfirmed()) {
 					System.exit(0);
-				} 
+				}
 
 				party.startChrono();
 			}
 		});
-		
+
 		Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
-			
+
 			@Override
 			public void eventDispatched(AWTEvent event) {
-				
+
 				if (event.getID() == KeyEvent.KEY_TYPED) {
-					
-					
+
+
 					try {
 						int playerNum = Integer.parseInt(((KeyEvent) event).getKeyChar()+"");
-						
+
 						if (party.hasStarted() && playerNum >= 1 && playerNum <= party.getPlayersNb()) {
-							
+
 							if (party.getCurrentPlayerNum() == playerNum-1) {
-								
-								party.setCurrentPlayer(null);
-								board.setInteractions(false);
-								
-								disactiveButton(rewindButton);
-								disactiveButton(passTurnButton);
-								
-								for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
-									activeButton(playersButton[i]);
-								}
-								
-								currentPlayerNameLabel.setText("--");
+
+								switchToUser(NO_USER);
 								
 							} else if (party.getCurrentPlayerNum() >= 0) {
 								JOptionPane.showMessageDialog(null, 
-										party.getPlayers().get(party.getCurrentPlayerNum()).getPseudo() + "est en cour de jeu, veuillez attendre la fin du temps");
+										party.getPlayers().get(party.getCurrentPlayerNum()).getPseudo() + " est en cour de jeu, veuillez attendre la fin du temps");
 							} else {
 								switchToUser(playerNum-1);	
-								board.setInteractions(true);
-								
-								activeButton(rewindButton);
-								activeButton(passTurnButton);
 							}
 						}
 					} catch (NumberFormatException e) {
 						// TODO: handle exception
 					}
-					
-					
-					
-					
+
+
+
+
 				}
-				
+
 			}
 		}, AWTEvent.KEY_EVENT_MASK);
 
@@ -508,70 +524,87 @@ public class RasendeRoboter {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 
-				int gameTime = party.getTime();
+				int gameTime = party.getGameTime();
 				int reflexionTime = party.getReflexionTime();
-				
+				int responseTime = party.getResponseTime();
+
 				gameTimeLabel.setText((gameTime < 0)
-						? "∞" : gameTime/60+":"+gameTime%60);
-				
+						? "∞" : String.format("%02d", gameTime/60)+":"+String.format("%02d", gameTime%60));
+
 				reflexionTimeLabel.setText((reflexionTime < 0)
-						? "∞" : reflexionTime/60+":"+reflexionTime%60);
-				
+						? "∞" : String.format("%02d", reflexionTime/60)+":"+String.format("%02d", reflexionTime%60));
+
+				responseTimeLabel.setText((responseTime < 0)
+						? "∞" : String.format("%02d", responseTime/60)+":"+String.format("%02d", responseTime%60));
+
 				List<Player> playerList = ((GamePartyModel) e.getSource()).getPlayers();
-				
-				
+
+
 				if (! party.isReady()) {
 
-					activeButton(startButton);
-					
+					enableButton(startButton);
+
 					for (int i = 0; i < playerList.size(); i++) {
 
 						int index = i; 
 						playerNameTextArea[i].setText(playerList.get(i).getPseudo());
 						playerScoreLabels[i].setText(playerList.get(i).getPoints()+"");
 
-						playersButton[i].setVisible(true);
-						playerNameTextArea[i].setVisible(true);
-						playerScoreLabels[i].setVisible(true);
-
 						playersButton[i].addActionListener(new ActionListener() {
 
 							@Override
 							public void actionPerformed(ActionEvent e) {
 
-								disactiveButton((JButton) e.getSource());
-								activeButton(rewindButton);
-								activeButton(passTurnButton);
+								disableButton((JButton) e.getSource());
+								enableButton(rewindButton);
+								enableButton(passTurnButton);
 								switchToUser(index);					
 								board.setInteractions(true);
 							}
 						});
-					}						
+					}
+
+					for (int i = party.getPlayersNb(); i < MAX_PLAYER_NUMBER; i++) {
+						playersButton[i].setVisible(false);
+						playerNameTextArea[i].setVisible(false);
+						playerScoreLabels[i].setVisible(false);
+					}
+
 				} else {
-					
+
 					try {
 						playerScoreLabels[party.getCurrentPlayerNum()]
 								.setText(Integer.toString(playerList.get(party.getCurrentPlayerNum()).getPoints()));
 					} catch (ArrayIndexOutOfBoundsException ex) {
-						// TODO: handle exception
+						// There is no current player we just started the party
 					}
-					
+
 					if (party.chronoIsActive()) {
 
 						if (gameTime == 0) {
-							
+
 							for (int i = 0; i < 4; i++) {						
-								disactiveButton(playersButton[i]);
+								disableButton(playersButton[i]);
 							}
-							
-							disativateButtonList(new JButton [] {passTurnButton, rewindButton, startButton});
-							
+
+							disableButtonList(new JButton [] {passTurnButton, rewindButton, startButton});
+
 							showWinner();
-							
-						} else if (reflexionTime == 60) {
-						showNextTarget();
+
+						} else if (reflexionTime == 0) {
+							party.resetReflexionTime();
+							showNextTarget();
+						} else if (responseTime == 0) {
+							JOptionPane.showMessageDialog( 
+									null,
+									"Temps de réponse épuisé",
+									"Temps de réponse",
+									JOptionPane.INFORMATION_MESSAGE
+									);
+
+							switchToUser(NO_USER);
+						}
 					}
-				}
 				}
 			}
 		});
@@ -583,14 +616,14 @@ public class RasendeRoboter {
 
 				JButton btn = (JButton) e.getSource();				
 
-				disactiveButton(btn);
-				activeButton(resetButton);
-				//activeButton(passTurnButton);
+				disableButton(btn);
+				enableButton(resetButton);
+				enableButton(passTurnButton);
 
 				board.setVisible(true);
 
 				for (int i = 0; i < party.getPlayersNb(); i++) {
-					activeButton(playersButton[i]);
+					enableButton(playersButton[i]);
 				}
 
 				party.startParty();
@@ -602,27 +635,17 @@ public class RasendeRoboter {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				if (! board.acceptInteractions()) {
+				if (party.getCurrentPlayerNum() == NO_USER) {
 					
 					showNextTarget();
 					
-					if (rewindButton.isEnabled()) {
-						disactiveButton(rewindButton);					
-					}
-									
 				} else {
 					party.resetReflexionTime();
-					board.rewindPions();					
-					board.setInteractions(false);
-					
-					party.setCurrentPlayer(null);
-					
-					currentPlayerNameLabel.setText("--");
+					disableButton(rewindButton);					
+					board.rewindPions();
 				}
-
-				for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
-					activeButton(playersButton[i]);
-				}
+				
+				switchToUser(NO_USER);
 			}
 		});
 
@@ -631,12 +654,7 @@ public class RasendeRoboter {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				
-				
-				if (JOptionPane.showConfirmDialog(null,
-						"     La partie n'est pas terminée.\nVoulez-vous quand même la quitter ?",
-						"Partie en cours",
-						JOptionPane.WARNING_MESSAGE, JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+				if (exitConfirmed()) {
 					mainFrame.dispose();
 					party.stopChrono();
 					new RasendeRoboter().display();
@@ -676,38 +694,24 @@ public class RasendeRoboter {
 						&& currentTarget.getColor() == matchedCase.getColor()) {
 
 					party.addPointToCurrentPlayer();
-					
-					System.out.println(((BoardComponent)evt.getSource()).getMovesCount());
 
 					board.updatePionPosition();
 					board.releasePionFocus();
-
-					disactiveButton(rewindButton);
-					//disactiveButton(passTurnButton);
-
-					party.stopChrono();
 					
-
+					party.stopChrono();
 
 					try {
 						showTarget(party.getNextTarget());
 
 						party.resetReflexionTime();
-						currentPlayerNameLabel.setText("--");
 						
-						for(int i = 0, size = party.getPlayersNb(); i < size; i++) {							
-							activeButton(playersButton[i]);
-						}
-												
+						switchToUser(NO_USER);
+						
 						party.startChrono();
 
 					} catch (GamePartyModel.EmptyTargetListException e) {
-
-						party.stopChrono();
 						showWinner();
 					}
-					
-					party.setCurrentPlayer(null);
 				}
 			}
 		});
@@ -716,84 +720,107 @@ public class RasendeRoboter {
 	private void showWinner() {
 		String text = "";
 
+		board.setInteractions(false);
+		
+		party.stopChrono();
+
+		disableButtonList(new JButton []{passTurnButton, rewindButton});
+
+		for (JButton btn : playersButton) {
+			disableButton(btn);
+		}
+		
 		for (Player winner : party.getWinners()) {
 			text += (winner.getPseudo() + "\n");
 		}
-
-		JOptionPane.showMessageDialog(null, "La partie est terminée ! Le(s) gagnant(s) avec "+party.getWinners().get(0).getPoints()+": points \n"+text);
-
-		for (JButton btn : playersButton) {
-			disactiveButton(btn);
-		}
 		
-		board.setInteractions(false);
-
-		disativateButtonList(new JButton []{passTurnButton, rewindButton});
-
-		party.stopChrono();
+		JOptionPane.showMessageDialog(
+				null,
+				"La partie est terminée ! Le(s) gagnant(s) avec "+party.getWinners().get(0).getPoints()+": points \n"+text);
 	}
 
 
 	private void switchToUser(int userIndex) {
-		
-		Player p = party.getPlayers().get(userIndex);
-		
-		currentPlayerNameLabel.setText(p.getPseudo());
-		
-		party.setCurrentPlayer(p);
 
-		for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
-			//if (userIndex != i) {
+		Player currentPlayer = null;
+		
+		try {
+			board.setInteractions(true);
+
+			currentPlayer = party.getPlayers().get(userIndex);			
+			currentPlayerNameLabel.setText(currentPlayer.getPseudo());
+			
+			enableButton(rewindButton);
+			
+			
+			for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
 				if (playersButton[i].isEnabled()) {					
-					disactiveButton(playersButton[i]);
+					disableButton(playersButton[i]);
 				}
-			//}
+			}
+			
+			party.resetResponseTime();
+		} catch (IndexOutOfBoundsException e) {
+			board.setInteractions(false);
+
+			currentPlayerNameLabel.setText(NO_INFO);
+						
+			disableButton(rewindButton);
+			
+			for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
+				if (! playersButton[i].isEnabled()) {					
+					enableButton(playersButton[i]);
+				}
+			}
+		}
+
+		party.setCurrentPlayer(currentPlayer);
+	}
+
+	private void enableButton(JButton button) {
+		
+		if (! button.isEnabled()) {			
+			button.setEnabled(true);
+			button.setBackground(button.getBackground().brighter());
+			button.repaint();
 		}
 	}
 
-	private void activeButton(JButton button) {
-		button.setEnabled(true);
-		button.setBackground(button.getBackground().brighter());
-		button.repaint();
-	}
-
-	private void disactiveButton(JButton button) {
-		button.setEnabled(false);
-		button.setBackground(button.getBackground().darker());
-		button.repaint();
+	private void disableButton(JButton button) {
+		
+		if (button.isEnabled()) {			
+			button.setEnabled(false);
+			button.setBackground(button.getBackground().darker());
+			button.repaint();
+		}
 	}
 
 	private void initGameWindow() {
-		
-		for (int i = 0; i < 4; i++) {						
+
+		/*for (int i = 0; i < 4; i++) {						
 			playerNameTextArea[i].setVisible(false);
 			playerScoreLabels[i].setVisible(false);
 			playersButton[i].setVisible(false);
-		}
-		
-		disativateButtonList(new JButton []{passTurnButton, rewindButton, resetButton, startButton});
+		}*/
+
+		disableButtonList(new JButton []{passTurnButton, rewindButton, resetButton, startButton});
 
 		for (JButton jButton : playersButton) {
-			disactiveButton(jButton);
+			disableButton(jButton);
 		}
-		
-		board.setVisible(false);
+
+		//board.setVisible(false);
 	}
 
 	public void display() {
 
 		mainFrame.setResizable(false);
 		mainFrame.pack();
-		mainFrame.setVisible(true);
 		mainFrame.setLocationRelativeTo(null);
 		mainFrame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-
 		initGameWindow();
 
-
-		//gameManager.init(options);
-		//setPlayers(options.get(0));
-		//board.setVisible(false);
+		mainFrame.setVisible(true);
 		optionDialog.setVisible(true);
 	}
 
@@ -809,19 +836,18 @@ public class RasendeRoboter {
 		robotIcon.getImage().flush();
 		robotImage.setIcon(robotIcon);
 	}
-	
+
 	private void showNextTarget() {
-		
+
 		try {
 			showTarget(party.getNextTarget());
 
 			for(int i = 0, size = party.getPlayersNb(); i < size; i++) {							
-				activeButton(playersButton[i]);
+				enableButton(playersButton[i]);
 			}
-			
+
 			party.resetReflexionTime();
 			party.startChrono();
-			
 
 		} catch (GamePartyModel.EmptyTargetListException e) {
 
@@ -836,7 +862,7 @@ public class RasendeRoboter {
 	private void setPartyOptions(List<Integer> options) {
 
 		ArrayList<Player> players = new ArrayList<Player>();
-		
+
 		TreeSet<String> pseudoList = new TreeSet<String>();
 
 		int plNb = options.remove(0);
@@ -846,16 +872,19 @@ public class RasendeRoboter {
 			String pseudo = null;
 
 			do {				
-				pseudo = JOptionPane.showInputDialog("Nom du joueur "+(i+1)+": ");
+				pseudo = JOptionPane.showInputDialog(null,
+						"              Pseudo du joueur "+(i+1)+"",
+						"Joueur "+(i+1),
+						JOptionPane.PLAIN_MESSAGE);
 
 
 				if (pseudo == null) {
 					optionDialog.setVisible(true);
 					break;
-					
+
 				} else if (pseudo.isBlank()) {
 					JOptionPane.showMessageDialog(null, "Vous devez choisir un pseudo");
-					
+
 				} else if (pseudoList.contains(pseudo)) {
 					JOptionPane.showMessageDialog(null, "Ce pseudo a déjà été pris !");
 				}
@@ -884,14 +913,14 @@ public class RasendeRoboter {
 			}
 		});
 	}
-	
-	
-	
-	
-	private void disativateButtonList(JButton [] btnList) {
-		
+
+
+
+
+	private void disableButtonList(JButton [] btnList) {
+
 		for (JButton button : btnList) {
-			disactiveButton(button);
+			disableButton(button);
 		}	
 	}
 }

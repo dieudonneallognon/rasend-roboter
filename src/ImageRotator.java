@@ -22,7 +22,7 @@ public class ImageRotator {
 
 		try {
 			ImageInputStream inputStrem = ImageIO.createImageInputStream(input);
-
+			
 			Iterator<ImageReader> iterator = ImageIO.getImageReaders(inputStrem);
 			ImageReader reader = iterator.next();
 			String format = reader.getFormatName();
@@ -87,7 +87,7 @@ public class ImageRotator {
 		BufferedImage rotated = null;
 		try {
 			ImageInputStream inputStrem = ImageIO.createImageInputStream(input);
-
+			
 			Iterator<ImageReader> iterator = ImageIO.getImageReaders(inputStrem);
 			ImageReader reader = iterator.next();
 			String format = reader.getFormatName();

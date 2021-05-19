@@ -19,7 +19,7 @@ public class ResourceLoarder {
 	
 	public String getSourceDir() {
 		
-		return this.sourceDir+"\\";
+		return this.sourceDir+"/";
 	}
 	
 	public File getResource(String name) {

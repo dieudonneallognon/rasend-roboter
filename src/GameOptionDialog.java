@@ -23,10 +23,17 @@ import javax.swing.event.EventListenerList;
 public class GameOptionDialog extends JDialog{
 
 	public static final String [] PLAYERS_NUMBERS = new String [] {"2", "3", "4"};
-	public static final String [] GAME_TIMES = new String[] { "1", "10", "20", "---"};
-	public static final String [] GAME_RESPONSE_TIMES = new String[] { "1", "2", "3", "---"};
+	public static final String [] GAME_TIMES = new String[] { "5", "10", "30", "∞"};
+	public static final String [] GAME_REFLEXION_TIMES = new String[] { "1", "2", "5", "∞"};
+	public static final String [] GAME_RESPONSE_TIMES = new String[] { "1", "2", "3", "∞"};
+	
+	public static final int INFINITE_VAL = -1;
+	
+	
 	public static final JComboBox<String> PLAYERS_NUMBER_COMBO = new JComboBox<String>(PLAYERS_NUMBERS);
 	protected static final JComboBox<String> GAME_TIME_COMBO = new JComboBox<String>(GAME_TIMES);
+	protected static final JComboBox<String> REFLEXION_TIME_COMBO = new JComboBox<String>(GAME_REFLEXION_TIMES);
+	
 	protected static final JComboBox<String> RESPONSE_TIME_COMBO = new JComboBox<String>(GAME_RESPONSE_TIMES);
 	
 	private  EventListenerList listenerList;
@@ -40,7 +47,7 @@ public class GameOptionDialog extends JDialog{
 		
 		listenerList = new EventListenerList();
 		
-		JButton startButton = new JButton("Commencer");
+		JButton startButton = new JButton("Jouer");
 		
 		add(new JPanel(), BorderLayout.NORTH);		
 		JPanel panel = new JPanel(new GridLayout(4, 2)); {
@@ -48,6 +55,8 @@ public class GameOptionDialog extends JDialog{
 			panel.add(PLAYERS_NUMBER_COMBO);
 			panel.add(new JLabel("Temps de la partie (minutes): "));
 			panel.add(GAME_TIME_COMBO);
+			panel.add(new JLabel("Temps réflexion (minutes): "));
+			panel.add(REFLEXION_TIME_COMBO);
 			panel.add(new JLabel("Temps de réponse (minutes): "));
 			panel.add(RESPONSE_TIME_COMBO);
 		}
@@ -57,40 +66,55 @@ public class GameOptionDialog extends JDialog{
 
 		startButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				setVisible(false);
+				
 				
 				options.clear();
-				options.add(Integer.parseInt((String) PLAYERS_NUMBER_COMBO.getSelectedItem()));
 				
+				options.add(Integer.parseInt((String) PLAYERS_NUMBER_COMBO.getSelectedItem()));
+								
 				try {
 					options.add(Integer.parseInt((String)GAME_TIME_COMBO.getSelectedItem()));
 				} catch (NumberFormatException e) {
-					options.add(-1);
+					options.add(INFINITE_VAL);
+				}
+				
+				try {
+					options.add(Integer.parseInt((String)REFLEXION_TIME_COMBO.getSelectedItem()));
+				} catch (NumberFormatException e) {
+					options.add(INFINITE_VAL);
 				}
 				
 				try {
 					options.add(Integer.parseInt((String)RESPONSE_TIME_COMBO.getSelectedItem()));
 				} catch (NumberFormatException e) {
-					options.add(-1);
+					options.add(INFINITE_VAL);
 				}
 				
+				System.out.println(options);
 				
-				fireStateChanged();
+				
+				if (optionsAreValid()) {					
+					setVisible(false);
+					fireStateChanged();
+				} else {
+					JOptionPane.showMessageDialog(
+							null,
+							"Il y a des erreurs dans le choix des options !",
+							"Options Incorrectes",
+							JOptionPane.ERROR_MESSAGE);
+				}
+				
 			}
 		});
 		
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				if (JOptionPane.showConfirmDialog(null,
-						"     Quitter le jeu ?",
-						"Quitter",
-						JOptionPane.ERROR_MESSAGE, JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+				if (RasendeRoboter.exitConfirmed()) {
 					System.exit(0);
 				}
 			}
 		});
-		
 		
 		
 		pack();
@@ -106,6 +130,10 @@ public class GameOptionDialog extends JDialog{
 	
 	
 	
+	
+	public boolean optionsAreValid() {
+		return (options.get(1) > options.get(2));
+	}
 	
 	
 	

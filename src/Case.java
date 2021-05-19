@@ -12,7 +12,6 @@ public class Case implements Comparable<Case>{
 	private GameColor color;
 	
 	private CaseState state;
-	//private Pion p;
 	
 	public Case() {
 		state = CaseState.FREE;
@@ -82,32 +81,6 @@ public Case(Board.Coord coord, GameColor color, CaseType type) {
 		return this.state == CaseState.FREE;
 	}
 	
-	/*public void Rotate() {
-		Borders u = this.up;
-		Borders l = this.left;
-		Borders d = this.down;
-		Borders r = this.right;
-		if(r == Borders.WALLVER) {
-			this.up = Borders.WALLHOR ;
-		}else {
-			this.up =r;
-		}
-		if(u == Borders.WALLHOR) {
-			this.left = Borders.WALLVER;
-		}else {
-			this.left =u;
-		}
-		if(l == Borders.WALLVER) {
-			this.down = Borders.WALLHOR;
-		}else {
-			this.down = l;
-		}
-		if(d == Borders.WALLHOR) {
-			this.right = Borders.WALLVER;
-		}else {
-			this.right = d;
-		}
-	}*/
 	
 	public void setType(CaseType type) {
 		this.type = type;
@@ -143,20 +116,15 @@ public Case(Board.Coord coord, GameColor color, CaseType type) {
 		this.bottomLimit = b;
 	}
 	
-	/*public void setPion(Pion pi) {
-		this.p = pi;
+	
+	public boolean matchPion(PionType pionType) {
+		boolean result = false;
+		
+		if (color != null) {			
+			result = pionType.name().equals(color.name());
+		}
+		return result;
 	}
-	
-	public void unsetPion() {
-		this.p = null;
-	}*/
-	
-	
-	/*public enum Borders{
-		VIDE,
-		WALLHOR,
-		WALLVER;
-	}*/
 	
 	@Override
 	public int compareTo(Case o) {
@@ -191,14 +159,4 @@ public Case(Board.Coord coord, GameColor color, CaseType type) {
 		s+= (!canCrossDown() ? 'b' : "");
 		return s;
 	}
-
-	public boolean match(PionType pionType) {
-		boolean result = false;
-		
-		if (color != null) {			
-			result = pionType.name().equals(color.name());
-		}
-		return result;
-	}
-	
 }
