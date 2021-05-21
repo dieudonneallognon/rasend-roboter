@@ -31,8 +31,8 @@ public class FaceRotator {
 
 		Case[][] rotated = new Case[FaceGenerator.CASE_NUMBER][FaceGenerator.CASE_NUMBER];
 
-		for(int i = 0;i<FaceGenerator.CASE_NUMBER;++i) {
-			for(int j = 0;j<FaceGenerator.CASE_NUMBER;++j) {
+		for(int i = 0; i < FaceGenerator.CASE_NUMBER; ++i) {
+			for(int j = 0; j < FaceGenerator.CASE_NUMBER; ++j) {
 
 				cases[i][j].setCoord(new Board.Coord(
 						FaceGenerator.CASE_NUMBER - 1 - cases[i][j].getCoord().getColumn(),
@@ -82,24 +82,6 @@ public class FaceRotator {
 						FaceGenerator.CASE_NUMBER - 1 -cases[i][j].getCoord().getRow()));
 				
 				rotated[i][j] = rotateBorder(cases[i][j]);
-				
-				//
-//				if (!cases[i][j].canCrossTop()) {
-//					rotated, i, j);
-//				}
-//
-//				if (!cases[i][j].canCrossLeft()) {
-//					BorderGenerator.placeTopBorderOn(rotated, i, j);
-//				}
-//
-//				if (!cases[i][j].canCrossDown()) {
-//					BorderGenerator.placeLeftBorderOn(rotated, i, j);
-//				}
-//
-//				if (!cases[i][j].canCrossRight()) {
-//					BorderGenerator.placeBottomBorderOn(rotated, i, j);
-//				}
-
 			}
 		}
 
@@ -108,7 +90,10 @@ public class FaceRotator {
 	
 	private static Case rotateBorder(Case in) {
 		
-		return new Case(in.getCoord(), in.getColor(), in.getType(), !in.canCrossLeft(), !in.canCrossRight(), !in.canCrossDown(), !in.canCrossTop()); 
+		return new Case(
+				in.getCoord(), in.getColor(), in.getType(),
+				!in.canCrossLeft(), !in.canCrossRight(),
+				!in.canCrossDown(), !in.canCrossTop()); 
 	}
 	
 

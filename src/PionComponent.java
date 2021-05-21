@@ -1,16 +1,12 @@
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
-import java.util.Iterator;
 
 import javax.swing.JComponent;
-import javax.swing.RepaintManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -25,16 +21,17 @@ public class PionComponent extends JComponent{
 	private Point casePos;
 		
 	public static final String PROP_COORD = "coord";
-	
-	//private PionType type;
-	
+		
 	public PionComponent(PionType type, Board.Coord initCoord) {
 		
+		animator = new PionAnimator(this, null);
+	
 		createModel(type, initCoord);
 		
 		createView();
 		
 		createController();
+		
 	}
 	
 	
@@ -47,16 +44,12 @@ public class PionComponent extends JComponent{
 
 
 	private void createModel(PionType type, Board.Coord coord) {
-		
 		model = new Pion(type, coord);
 	}
 	
 	private void createController() {
 		focus = false;
 		moving = false;
-				
-		animator = new PionAnimator(this, null);
-
 		
 		model.addChangeListener(new ChangeListener() {
 			
@@ -77,14 +70,14 @@ public class PionComponent extends JComponent{
 	}
 	
 	
-	public boolean canMoveTo(Board.Coord c) {
-		return Board.canGoTo(model.getCoord(), model.getCoord().directionTo(c));
+	public boolean canMoveTo(Board.Coord coord) {
+		return Board.canGoTo(model.getCoord(), model.getCoord().directionTo(coord));
 	}
 	
-	public void move(Board.Coord c) {	
+	public void move(Board.Coord coord) {	
 		
 		if (!moving) {
-			Direction direction = model.getCoord().directionTo(c);
+			Direction direction = model.getCoord().directionTo(coord);
 			
 			if (direction != Direction.NONE) {
 				moving = true;
@@ -110,10 +103,7 @@ public class PionComponent extends JComponent{
 	}
 	
 	private void drawPion(Graphics g) {
-			
-		//g.setColor(Color.BLACK);
-		//g.fillRect(getWidth()/4, getHeight()/4, getWidth()/2, getHeight());
-			
+
 		if (haveFocus() && !moving) {
 			g.setColor(model.getType().getColor().darker().darker());
 			

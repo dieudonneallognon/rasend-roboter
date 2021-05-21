@@ -1,13 +1,9 @@
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
-import java.util.TreeSet;
 
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -28,8 +24,6 @@ public class GamePartyModel {
 		private boolean ready;
 		private boolean started;
 		
-		private PropertyChangeSupport pcs;
-
 		public String PROP_IS_READY = "isReady";
 
 		private List<Target> targetsList;
@@ -49,9 +43,7 @@ public class GamePartyModel {
 		
 		public GamePartyModel () {	
 			targetsList = new ArrayList<Target>();
-			playedTargets = new ArrayList<Target>();
-			pcs =  new PropertyChangeSupport(this);
-			
+			playedTargets = new ArrayList<Target>();			
 			listenersList = new EventListenerList();
 		}
 		
@@ -269,15 +261,6 @@ public class GamePartyModel {
 			}
 		}
 		
-		
-		public void addPropertyChangeListener(String propName, PropertyChangeListener lst) {			
-			pcs.addPropertyChangeListener(propName, lst);
-		}
-
-		public void removePropertyChangeListener(PropertyChangeListener lst) {
-
-			pcs.removePropertyChangeListener(lst);
-		}
 		
 		public void addChangeListener(ChangeListener listener) {
 			listenersList.add(ChangeListener.class, listener);

@@ -238,220 +238,12 @@ public class RasendeRoboter {
 		mainFrame.add(board, BorderLayout.CENTER);
 	}
 
-	/*private void createController() {
-
-		disactiveButton(rewindButton);
-		disactiveButton(passTurnButton);
-
-		partyModel.addPropertyChangeListener(PROP_IS_READY, lst);
-
-		board.addPropertyChangeListener(BoardComponent.PROP_READY, new PropertyChangeListener() {
-
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				//gameManager.setTargetsList((List<Target>)evt.getNewValue());
-				showTarget(partyModel.getNextTarget());
-			}
-		});
-
-		board.addPropertyChangeListener(BoardComponent.PROP_HAVE_MATCH, new PropertyChangeListener() {
-
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-
-				Target currentTarget = partyModel.playedTargets.get(partyModel.getPlayersNb()-1);
-				Case matchedCase = (Case)evt.getNewValue();
-
-				if (currentTarget.getType() == matchedCase.getType() && currentTarget.getColor() == matchedCase.getColor()) {
-
-					//gameManager.currentPlayer.addPoint();
-					//gameManager.setCurrentPlayer(GameData.NO_USER_INDEX);
-
-					board.updatePionPosition();
-					board.releasePionFocus();
-
-					disactiveButton(rewindButton);
-					disactiveButton(passTurnButton);
-
-					//gameTimer.stop();
-
-					int nextId = partyModel.getNextTarget();
-
-					if (nextId != -1) {
-						showTarget(nextId);
-						for(int i = 0, size = partyModel.getPlayersNb(); i < size; i++) {							
-							activeButton(playersButton[i]);
-						}
-						gameTimer.start();
-					} else {
-
-						showWinner();
-					}
-					//gameManager.refreshSolutionTime();
-				}
-			}
-		});
-
-		mainFrame.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				if (JOptionPane.showConfirmDialog(null,
-						"     La partie n'est pas terminée.\nVoulez-vous quand même la quitter ?",
-						"Partie en cours",
-						JOptionPane.ERROR_MESSAGE, JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-					System.exit(0);
-				}
-			}
-		});
-
-		mainFrame.addWindowFocusListener(new WindowAdapter() {
-
-			@Override
-			public void windowGainedFocus(WindowEvent e) {
-				if (! gameTimer.isRunning()) {
-					gameTimer.start();
-				}
-			}
-		});
-
-		resetButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				SwingUtilities.invokeLater(new Runnable() {
-					@Override
-					public void run() {
-						//new PlateauTest().display();
-						//new RasendeRoboter().display();
-						//mainFrame.dispose();
-					}
-				});
-			}
-		});
-
-		for (int i = 0, size = playersButton.length; i < size; i++) {
-
-			int index = i;
-
-			playersButton[i].addActionListener(new ActionListener() {
-
-				@Override
-				public void actionPerformed(ActionEvent e) {
-
-					disactiveButton((JButton) e.getSource());
-					activeButton(rewindButton);
-					activeButton(passTurnButton);
-					switchToUser(index);					
-					board.setInteractions(true);
-				}
-			});
-		}
-
-		rewindButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				board.rewindPions();
-			}
-		});
-
-		passTurnButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-
-				disactiveButton(passTurnButton);
-				disactiveButton(rewindButton);
-				board.setInteractions(false);
-				for (int i = 0, size = gameManager.getPlayersNb(); i < size; i++) {
-					activeButton(playersButton[i]);
-				}
-				//gameManager.refreshSolutionTime();
-				board.rewindPions();
-			}
-		});
-
-		gameTimer.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-
-				gameManager.updateGameTime();
-
-				if (board.acceptInteractions()) {
-					gameManager.updateSolutionTime();
-				}
-
-				if (gameManager.getTime() <= 0) {					
-					showWinner();
-				}
-			}
-		});
-
-//		mainFrame.addKeyListener(new KeyAdapter() {
-//			
-//			public void keyTyped(KeyEvent e) {
-//				// TODO Auto-generated method stub
-//			// gettOut pour recuperer la varible qui decroit avec les seconde de la main du joueur il es declarer et mis a chaque fois a jour dans la calss Board.java
-//				if(gameManager.getTime() ==59) {
-//					//no time gére le temps qui est attribuer au jouer la fonction est diponible dans la calss Board.java
-//				//bord.noTime();
-//				//bord.timer.start();
-//				}
-//				if (e.getKeyChar() =='˛') {
-//					//System.out.println(bord.gettOut());
-//					if(gameManager.getTime() !=59) {
-//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-//					}else {		
-//						JOptionPane.showMessageDialog(null, gameManager.playerList.get(0).getPseudo() + "en cour de jeu");
-//						this.keyPressed = e.getKeyChar();
-//						enCour = gameManager.playerList.get(0).getPseudo();
-//					}
-//				}
-//				
-//				if (e.getKeyChar() =='0') {
-//					if(gameManager.getTime() !=59) {
-//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-//						
-//					}else {
-//						
-//						this.keyPressed = e.getKeyChar();
-//						JOptionPane.showMessageDialog(null,gameManager.playerList.get(1).getPseudo() + "en cour de jeu");
-//						enCour = gameManager.playerList.get(1).getPseudo();
-//					}
-//				}
-//				if (e.getKeyChar() =='-') {
-//					if(gameManager.getTime() !=59) {
-//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-//					}else {
-//						
-//						this.keyPressed = e.getKeyChar();
-//						JOptionPane.showMessageDialog(null, gameManager.playerList.get(2).getPseudo() + "en cour de jeu");
-//						enCour = gameManager.playerList.get(2).getPseudo();
-//
-//					}
-//				}
-//				if (e.getKeyChar() =='c') {
-//					if(gameManager.getTime() != 59) {
-//						JOptionPane.showMessageDialog(null, enCour + "en cour de jeu, veuillez attendre la fin des 60 sec");
-//					}else {
-//						 
-//						this.keyPressed = e.getKeyChar();
-//						JOptionPane.showMessageDialog(null, gameManager.playerList.get().getPseudo() + "en cour de jeu");
-//						enCour = gameManager.playerList.get(3).getPseudo();
-//					}
-//				}
-//				
-//				}
-//		});
-	}
-	 */
-
 	public static boolean exitConfirmed() {
 
 		Object[] options = { "Oui", "Non" };
 
-		return (JOptionPane.showOptionDialog(null, "    La partie n'est pas terminée\nVoulez-vous quand même la quitter ?",
+		return (JOptionPane.showOptionDialog(null, 
+				"    La partie n'est pas terminée\nVoulez-vous quand même la quitter ?",
 				"Partie en cours",
 				JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
 				null, options, options[0]) == 0);
@@ -479,7 +271,6 @@ public class RasendeRoboter {
 
 				if (event.getID() == KeyEvent.KEY_TYPED) {
 
-
 					try {
 						int playerNum = Integer.parseInt(((KeyEvent) event).getKeyChar()+"");
 
@@ -488,10 +279,12 @@ public class RasendeRoboter {
 							if (party.getCurrentPlayerNum() == playerNum-1) {
 
 								switchToUser(NO_USER);
-								
+
 							} else if (party.getCurrentPlayerNum() >= 0) {
+								party.stopChrono();
 								JOptionPane.showMessageDialog(null, 
 										party.getPlayers().get(party.getCurrentPlayerNum()).getPseudo() + " est en cour de jeu, veuillez attendre la fin du temps");
+								party.startChrono();
 							} else {
 								switchToUser(playerNum-1);	
 							}
@@ -499,12 +292,7 @@ public class RasendeRoboter {
 					} catch (NumberFormatException e) {
 						// TODO: handle exception
 					}
-
-
-
-
 				}
-
 			}
 		}, AWTEvent.KEY_EVENT_MASK);
 
@@ -636,15 +424,15 @@ public class RasendeRoboter {
 			public void actionPerformed(ActionEvent e) {
 
 				if (party.getCurrentPlayerNum() == NO_USER) {
-					
+
 					showNextTarget();
-					
+
 				} else {
 					party.resetReflexionTime();
 					disableButton(rewindButton);					
 					board.rewindPions();
 				}
-				
+
 				switchToUser(NO_USER);
 			}
 		});
@@ -694,19 +482,19 @@ public class RasendeRoboter {
 						&& currentTarget.getColor() == matchedCase.getColor()) {
 
 					party.addPointToCurrentPlayer();
-
+					
 					board.updatePionPosition();
 					board.releasePionFocus();
-					
+
 					party.stopChrono();
 
 					try {
 						showTarget(party.getNextTarget());
 
 						party.resetReflexionTime();
-						
+
 						switchToUser(NO_USER);
-						
+
 						party.startChrono();
 
 					} catch (GamePartyModel.EmptyTargetListException e) {
@@ -721,7 +509,7 @@ public class RasendeRoboter {
 		String text = "";
 
 		board.setInteractions(false);
-		
+
 		party.stopChrono();
 
 		disableButtonList(new JButton []{passTurnButton, rewindButton});
@@ -729,11 +517,11 @@ public class RasendeRoboter {
 		for (JButton btn : playersButton) {
 			disableButton(btn);
 		}
-		
+
 		for (Player winner : party.getWinners()) {
-			text += (winner.getPseudo() + "\n");
+			text += "- "+(winner.getPseudo() + "\n");
 		}
-		
+
 		JOptionPane.showMessageDialog(
 				null,
 				"La partie est terminée ! Le(s) gagnant(s) avec "+party.getWinners().get(0).getPoints()+": points \n"+text);
@@ -743,30 +531,30 @@ public class RasendeRoboter {
 	private void switchToUser(int userIndex) {
 
 		Player currentPlayer = null;
-		
+
 		try {
 			board.setInteractions(true);
 
 			currentPlayer = party.getPlayers().get(userIndex);			
 			currentPlayerNameLabel.setText(currentPlayer.getPseudo());
-			
+
 			enableButton(rewindButton);
-			
-			
+
+
 			for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
 				if (playersButton[i].isEnabled()) {					
 					disableButton(playersButton[i]);
 				}
 			}
-			
+
 			party.resetResponseTime();
 		} catch (IndexOutOfBoundsException e) {
 			board.setInteractions(false);
 
 			currentPlayerNameLabel.setText(NO_INFO);
-						
+
 			disableButton(rewindButton);
-			
+
 			for (int i = 0, size = party.getPlayersNb(); i < size; i++) {
 				if (! playersButton[i].isEnabled()) {					
 					enableButton(playersButton[i]);
@@ -774,11 +562,13 @@ public class RasendeRoboter {
 			}
 		}
 
+		board.rewindPions();
+
 		party.setCurrentPlayer(currentPlayer);
 	}
 
 	private void enableButton(JButton button) {
-		
+
 		if (! button.isEnabled()) {			
 			button.setEnabled(true);
 			button.setBackground(button.getBackground().brighter());
@@ -787,7 +577,7 @@ public class RasendeRoboter {
 	}
 
 	private void disableButton(JButton button) {
-		
+
 		if (button.isEnabled()) {			
 			button.setEnabled(false);
 			button.setBackground(button.getBackground().darker());
@@ -809,7 +599,7 @@ public class RasendeRoboter {
 			disableButton(jButton);
 		}
 
-		//board.setVisible(false);
+		board.setVisible(false);
 	}
 
 	public void display() {
@@ -913,9 +703,6 @@ public class RasendeRoboter {
 			}
 		});
 	}
-
-
-
 
 	private void disableButtonList(JButton [] btnList) {
 

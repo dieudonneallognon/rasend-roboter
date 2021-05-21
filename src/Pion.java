@@ -19,45 +19,37 @@ public class Pion {
 	
 	private StepMaker stepUp = new StepMaker() {
 		@Override
-		public void makeStepOn(PionComponent pc) {
+		public void move(PionComponent pc) {
 			pc.setPosition(new Point(pc.getX(), pc.getY() - PionAnimator.getPxStep()));
 		}
 	};
 	
 	private StepMaker stepDown = new StepMaker() {
 		@Override
-		public void makeStepOn(PionComponent pc) {
+		public void move(PionComponent pc) {
 			pc.setPosition(new Point(pc.getX(), pc.getY() + PionAnimator.getPxStep()));
 		}
 	};
 	
 	private StepMaker stepLeft = new StepMaker() {
 		@Override
-		public void makeStepOn(PionComponent pc) {
+		public void move(PionComponent pc) {
 			pc.setPosition(new Point(pc.getX() - PionAnimator.getPxStep(), pc.getY()));
 		}
 	};
 	
 	private StepMaker stepRight = new StepMaker() {
 		@Override
-		public void makeStepOn(PionComponent pc) {
+		public void move(PionComponent pc) {
 			pc.setPosition(new Point(pc.getX() + PionAnimator.getPxStep(), pc.getY()));
 		}
 	};
 
-	private static final int NEXT_BLOCK_UP = 0;
-	private static final int NEXT_BLOCK_LEFT = 0;
-	private static final int NEXT_BLOCK_DOWN = Board.getRowNb()-1;
-	private static final int NEXT_BLOCK_RIGHT = Board.getColNb()-1;
-	protected static final int STEP = 2;
-
-
-
-	public Pion(PionType type, Board.Coord c) {
+	public Pion(PionType type, Board.Coord coord) {
 		this.type = type;
-		this.coord = c;
-		this.oldCoord = new Board.Coord(c.getRow(), c.getColumn());
-		this.rewindCoord = new Board.Coord(c.getRow(), c.getColumn());
+		this.coord = coord;
+		this.oldCoord = new Board.Coord(coord.getRow(), coord.getColumn());
+		this.rewindCoord = new Board.Coord(coord.getRow(), coord.getColumn());
 		
 		this.count = 0;
 
@@ -133,6 +125,22 @@ public class Pion {
 	public int getCount() {
 		return this.count;
 	}
+	
+	public void setCoord(Board.Coord coord) {
+		this.coord = coord;
+	}
+	
+	public void setOldCoord(Board.Coord oldCoord) {
+		this.oldCoord = oldCoord;
+	}
+	
+	public void setRewindCoord(Board.Coord rewindCoord) {
+		this.rewindCoord = rewindCoord;
+	}
+
+	public void resetCount() {
+		count = 0;
+	}
 
 	public void rewind() {
 		if (!rewindCoord.equals(coord)) {
@@ -162,21 +170,5 @@ public class Pion {
 				((ChangeListener) listeners[i + 1]).stateChanged(changeEvent);
 			}
 		}
-	}
-	
-	public void setCoord(Board.Coord coord) {
-		this.coord = coord;
-	}
-	
-	public void setOldCoord(Board.Coord oldCoord) {
-		this.oldCoord = oldCoord;
-	}
-	
-	public void setRewindCoord(Board.Coord rewindCoord) {
-		this.rewindCoord = rewindCoord;
-	}
-
-	public void resetCount() {
-		count = 0;
 	}
 }

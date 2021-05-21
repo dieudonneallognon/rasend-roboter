@@ -14,4 +14,8 @@ public enum FacePosition {
 	public static FacePosition intToFacePosition(int i) {
 		return values()[i-1];
 	}
+	
+	public int getPosition() {
+		return position; 
+	}
 }

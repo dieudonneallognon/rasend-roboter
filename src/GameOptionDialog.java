@@ -129,8 +129,6 @@ public class GameOptionDialog extends JDialog{
 	}
 	
 	
-	
-	
 	public boolean optionsAreValid() {
 		return (options.get(1) > options.get(2));
 	}

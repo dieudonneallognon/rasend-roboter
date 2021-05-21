@@ -83,7 +83,6 @@ public class BoardComponent extends JPanel {
 			public void stateChanged(ChangeEvent e) {
 				if (model.isReady() && currentFocused != null) {
 					firePropertyChange(PROP_HAVE_MATCH, null, Board.getCaseAt(currentFocused.getModel().getCoord()));
-					acceptInteraction = false;
 				} else {
 					for (PionComponent pion : pionList) {
 						Board.getCaseAt(pion.getModel().getCoord()).setState(CaseState.OCCUPED);					
@@ -182,12 +181,12 @@ public class BoardComponent extends JPanel {
 		} catch (IndexOutOfBoundsException e) {
 			repaint();
 		}
-		g.setColor(Color.PINK);
-		for (int i = 0; i <= Board.size().width; i+= Board.getCaseSize().width) {
-
-			g.fillRect(i, 0, 1, getHeight());
-			g.fillRect(0, i, getWidth(), 1);
-		}
+//		g.setColor(Color.PINK);
+//		for (int i = 0; i <= Board.size().width; i+= Board.getCaseSize().width) {
+//
+//			g.fillRect(i, 0, 1, getHeight());
+//			g.fillRect(0, i, getWidth(), 1);
+//		}
 	}
 
 

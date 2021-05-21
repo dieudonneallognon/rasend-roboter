@@ -1,6 +1,6 @@
 
 public interface StepMaker {
 	
-	public void makeStepOn(PionComponent pc);
+	public void move(PionComponent pc);
 	
 }

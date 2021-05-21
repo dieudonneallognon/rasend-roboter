@@ -37,11 +37,11 @@ public class PionAnimator {
 
 	public void animate() {
 
-		Thread animThread = new Thread(new Animation());
+		Thread animThread = new Thread(new Animator());
 		animThread.start();
 	}
 
-	private class Animation implements Runnable{		
+	private class Animator implements Runnable{		
 		@Override
 		public void run() {
 
@@ -52,7 +52,7 @@ public class PionAnimator {
 				while (! pion.getLocation().equals(nextPos)) {
 
 					calculatePxStep(pion.getLocation(), nextPos);
-					step.makeStepOn(pion);
+					step.move(pion);
 					
 					try {
 						SwingUtilities.invokeAndWait( new Runnable() {
@@ -70,13 +70,31 @@ public class PionAnimator {
 		}
 	}
 
+	private void calculatePxStep(Point actualPos, Point nextPos) {
 
+		int src, dest;
+
+		if (actualPos.x != nextPos.x) {
+			src = actualPos.x;
+			dest = nextPos.x;
+		} else {
+			src = actualPos.y;
+			dest = nextPos.y;
+		}
+
+		int distance = Math.abs(Math.abs(dest) - Math.abs(src)); 
+
+		pxStep = (distance / 20 > 0) 
+				? (distance / 20) 
+				: (distance / 5 > 0)
+				? distance / 5 : 1; 
+	}
+	
 	public void addChangeListener(ChangeListener listener) {
 		listenerList.add(ChangeListener.class, listener);
 	}
 
 	public void removeChangeListener(ChangeListener listener) {
-
 		listenerList.remove(ChangeListener.class, listener);
 	}
 
@@ -104,51 +122,4 @@ public class PionAnimator {
 	public static int getPxStep() {
 		return pxStep;
 	}
-
-	private void calculatePxStep(Point actualPos, Point nextPos) {
-
-		int src, dest;
-
-		if (actualPos.x != nextPos.x) {
-			src = actualPos.x;
-			dest = nextPos.x;
-		} else {
-			src = actualPos.y;
-			dest = nextPos.y;
-		}
-
-		int distance = Math.abs(Math.abs(dest) - Math.abs(src)); 
-
-		pxStep = (distance/20 >0) ? (distance/20) : (distance /5 > 0) ?distance /5 : 1; 
-	}
-
-	private StepMaker stepUp = new StepMaker() {
-		@Override
-		public void makeStepOn(PionComponent pc) {
-			pc.setPosition(new Point(pc.getX(), pc.getY()-PionAnimator.getPxStep()));
-		}
-	};
-
-	private StepMaker stepDown = new StepMaker() {
-		@Override
-		public void makeStepOn(PionComponent pc) {
-			pc.setPosition(new Point(pc.getX(), pc.getY()+PionAnimator.getPxStep()));
-		}
-	};
-
-	private StepMaker stepLeft = new StepMaker() {
-		@Override
-		public void makeStepOn(PionComponent pc) {
-			pc.setPosition(new Point(pc.getX()-PionAnimator.getPxStep(), pc.getY()));
-			System.out.println("left");
-		}
-	};
-
-	private StepMaker stepRight = new StepMaker() {
-		@Override
-		public void makeStepOn(PionComponent pc) {
-			pc.setPosition(new Point(pc.getX()+PionAnimator.getPxStep(), pc.getY()));
-			System.out.println("right");
-		}
-	};
 }
